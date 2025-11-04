@@ -132,8 +132,8 @@
 
 ## 2. 게시물 작성 & 댓글 기능
 
-### 2-1. 게시물 작성 모달
-
+### 
+2-1. 게시물 작성 모달
 - [ ] `components/post/CreatePostModal.tsx` 컴포넌트
   - [ ] Dialog 모달 (shadcn/ui)
   - [ ] 이미지 업로드 UI
@@ -164,16 +164,19 @@
 - [ ] `components/comment/CommentForm.tsx` 컴포넌트
   - [ ] "댓글 달기..." 입력창
   - [ ] Enter 키 또는 "게시" 버튼으로 댓글 작성
-- [ ] `app/api/comments/route.ts` POST API
-  - [ ] 댓글 작성
-  - [ ] 사용자 인증 확인
-  - [ ] 댓글 내용 검증
+- [x] `app/api/comments/route.ts` POST API
+  - [x] 댓글 작성
+  - [x] 사용자 인증 확인
+  - [x] 댓글 내용 검증
+  - [x] 댓글 길이 제한 (2,200자)
+  - [x] 게시물 존재 확인
 
 ### 2-4. 댓글 기능 - 삭제 & 무한스크롤
 
-- [ ] `app/api/comments/[commentId]/route.ts` DELETE API
-  - [ ] 댓글 삭제 (본인만)
-  - [ ] 권한 검증
+- [x] `app/api/comments/[commentId]/route.ts` DELETE API
+  - [x] 댓글 삭제 (본인만)
+  - [x] 권한 검증
+  - [x] 댓글 존재 확인
 - [ ] 댓글 삭제 버튼 UI
   - [ ] 댓글에 ⋯ 메뉴 추가
   - [ ] 본인 댓글만 삭제 버튼 표시
@@ -195,10 +198,11 @@
   - [ ] 통계: 게시물 수, 팔로워 수, 팔로잉 수
   - [ ] "팔로우" / "팔로잉" 버튼 (다른 사람 프로필일 때)
   - [ ] "프로필 편집" 버튼 (내 프로필일 때, 1차 제외)
-- [ ] `app/api/users/[userId]/route.ts` GET API
-  - [ ] 사용자 정보 조회
-  - [ ] 통계 정보 (user_stats 뷰 활용)
-  - [ ] 현재 사용자와의 팔로우 관계 확인
+- [x] `app/api/users/[userId]/route.ts` GET API
+  - [x] 사용자 정보 조회 (userId 또는 clerkId로 조회 가능)
+  - [x] 통계 정보 (user_stats 뷰 활용)
+  - [x] 현재 사용자와의 팔로우 관계 확인
+  - [x] 본인 프로필 여부 확인
 
 ### 3-2. 프로필 페이지 - 게시물 그리드
 
@@ -207,17 +211,18 @@
   - [ ] 1:1 정사각형 이미지 썸네일
   - [ ] Hover 시 좋아요/댓글 수 표시
   - [ ] 클릭 시 게시물 상세 모달/페이지로 이동
-- [ ] `app/api/posts/route.ts` 수정
-  - [ ] `userId` 쿼리 파라미터 추가
-  - [ ] 특정 사용자 게시물만 필터링
+- [x] `app/api/posts/route.ts` 수정
+  - [x] `userId` 쿼리 파라미터 추가
+  - [x] 특정 사용자 게시물만 필터링
 
 ### 3-3. 팔로우 기능
 
-- [ ] `app/api/follows/route.ts` API
-  - [ ] POST: 팔로우 추가
-  - [ ] DELETE: 팔로우 제거
-  - [ ] 자기 자신 팔로우 방지 검증
-  - [ ] 중복 팔로우 방지
+- [x] `app/api/follows/route.ts` API
+  - [x] POST: 팔로우 추가
+  - [x] DELETE: 팔로우 제거
+  - [x] 자기 자신 팔로우 방지 검증
+  - [x] 중복 팔로우 방지 (UNIQUE 제약조건 활용)
+  - [x] 팔로우할 사용자 존재 확인
 - [ ] 팔로우/언팔로우 버튼 구현
   - [ ] 미팔로우: "팔로우" 버튼 (파란색 #0095f6)
   - [ ] 팔로우 중: "팔로잉" 버튼 (회색)
