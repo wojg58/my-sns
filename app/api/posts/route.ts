@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClerkSupabaseClient } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { auth } from "@clerk/nextjs/server";
-import type { PostsResponse, PostWithRelations } from "@/lib/types";
+import type { PostsResponse, PostWithRelations, Post } from "@/lib/types";
 
 /**
  * @file app/api/posts/route.ts
- * @description 게시물 목록 조회 API
+ * @description 게시물 API
  *
  * GET /api/posts?page=1&limit=10
  * - 페이지네이션 지원 (기본: 10개씩)
@@ -13,8 +14,15 @@ import type { PostsResponse, PostWithRelations } from "@/lib/types";
  * - 게시물 + 사용자 정보 + 통계(좋아요 수, 댓글 수) 조인
  * - 현재 사용자의 좋아요 여부 확인
  *
+ * POST /api/posts
+ * - 이미지 업로드 (Supabase Storage)
+ * - 게시물 생성 (posts 테이블)
+ * - 파일 검증 (타입, 크기 최대 5MB)
+ * - 업로드 경로: {clerk_user_id}/{filename}
+ *
  * @dependencies
  * - @/lib/supabase/server: 서버 사이드 Supabase 클라이언트
+ * - @/lib/supabase/service-role: Service Role 클라이언트 (Storage 업로드용)
  * - @clerk/nextjs/server: Clerk 인증
  */
 
@@ -215,6 +223,172 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("[API] GET /api/posts error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    console.group("[API] POST /api/posts");
+
+    // 인증 확인
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    console.log("Post creation request from user:", userId);
+
+    // FormData 파싱
+    const formData = await request.formData();
+    const imageFile = formData.get("image") as File | null;
+    const caption = formData.get("caption") as string | null;
+
+    // 파일 검증
+    if (!imageFile) {
+      return NextResponse.json(
+        { error: "Image file is required" },
+        { status: 400 },
+      );
+    }
+
+    // 이미지 타입 검증
+    if (!imageFile.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Only image files are allowed" },
+        { status: 400 },
+      );
+    }
+
+    // 파일 크기 검증 (최대 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (imageFile.size > maxSize) {
+      return NextResponse.json(
+        { error: "File size must be less than 5MB" },
+        { status: 400 },
+      );
+    }
+
+    // 캡션 길이 검증 (최대 2,200자)
+    const captionText = caption?.trim() || null;
+    if (captionText && captionText.length > 2200) {
+      return NextResponse.json(
+        { error: "Caption must be less than 2200 characters" },
+        { status: 400 },
+      );
+    }
+
+    console.log("File validation passed:", {
+      fileName: imageFile.name,
+      fileSize: imageFile.size,
+      fileType: imageFile.type,
+      captionLength: captionText?.length || 0,
+    });
+
+    // Supabase 클라이언트 생성
+    const supabase = createClerkSupabaseClient();
+
+    // 현재 사용자의 user_id 찾기
+    const { data: currentUser, error: userError } = await supabase
+      .from("users")
+      .select("id, clerk_id")
+      .eq("clerk_id", userId)
+      .single();
+
+    if (userError || !currentUser) {
+      console.error("User not found:", userError);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Service Role 클라이언트로 Storage 업로드 (RLS 우회)
+    const serviceRoleClient = getServiceRoleClient();
+    const storageBucket = process.env.NEXT_PUBLIC_STORAGE_BUCKET || "uploads";
+
+    // 파일명 생성 (타임스탬프 + 랜덤 문자열)
+    const fileExt = imageFile.name.split(".").pop() || "jpg";
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    console.log("Uploading to storage:", { filePath, bucket: storageBucket });
+
+    // Supabase Storage에 업로드
+    const { data: uploadData, error: uploadError } =
+      await serviceRoleClient.storage
+        .from(storageBucket)
+        .upload(filePath, imageFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      return NextResponse.json(
+        {
+          error: "Failed to upload image",
+          details: uploadError.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    // 업로드된 파일의 공개 URL 가져오기
+    const {
+      data: { publicUrl },
+    } = serviceRoleClient.storage.from(storageBucket).getPublicUrl(filePath);
+
+    console.log("File uploaded successfully:", publicUrl);
+
+    // posts 테이블에 게시물 저장
+    const { data: post, error: postError } = await supabase
+      .from("posts")
+      .insert({
+        user_id: currentUser.id,
+        image_url: publicUrl,
+        caption: captionText,
+      })
+      .select()
+      .single();
+
+    if (postError) {
+      console.error("Post creation error:", postError);
+      // 업로드된 파일 삭제 시도 (실패해도 계속 진행)
+      await serviceRoleClient.storage
+        .from(storageBucket)
+        .remove([filePath])
+        .catch((err) => console.error("Failed to cleanup uploaded file:", err));
+
+      return NextResponse.json(
+        {
+          error: "Failed to create post",
+          details: postError.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    const createdPost: Post = {
+      id: post.id,
+      userId: post.user_id,
+      imageUrl: post.image_url,
+      caption: post.caption,
+      createdAt: post.created_at,
+      updatedAt: post.updated_at,
+    };
+
+    console.log("Post created successfully:", post.id);
+    console.groupEnd();
+
+    return NextResponse.json({
+      success: true,
+      post: createdPost,
+    });
+  } catch (error) {
+    console.error("[API] POST /api/posts error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

@@ -1,17 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import {
-  Home,
-  Search,
-  SquarePlus,
-  User,
-  Heart,
-  Menu,
-} from "lucide-react";
+import { Home, Search, SquarePlus, User, Heart, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CreatePostModal } from "@/components/post/CreatePostModal";
 
 /**
  * @file components/layout/Sidebar.tsx
@@ -38,90 +33,123 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen bg-white border-r border-[var(--instagram-border)] z-50 hidden md:block">
-      {/* 
+    <>
+      <aside className="fixed left-0 top-0 h-screen bg-white border-r border-[var(--instagram-border)] z-50 hidden md:block">
+        {/* 
         Desktop (1024px+): 244px 너비
         Tablet (768px~1023px): 72px 너비
       */}
-      <div className="w-[72px] md:w-[72px] lg:w-[244px] h-full flex flex-col">
-        {/* Logo */}
-        <div className="px-6 md:px-4 lg:px-6 py-5 border-b border-[var(--instagram-border)]">
-          <Link
-            href="/"
-            className="flex items-center gap-3 md:justify-center lg:justify-start"
-          >
-            <span className="text-2xl font-bold text-[var(--text-primary)] hidden md:hidden lg:inline">
-              Instagram
-            </span>
-            <span className="text-xl font-bold text-[var(--text-primary)] md:inline lg:hidden">
-              IG
-            </span>
-          </Link>
-        </div>
+        <div className="w-[72px] md:w-[72px] lg:w-[244px] h-full flex flex-col">
+          {/* Logo */}
+          <div className="px-6 md:px-4 lg:px-6 py-5 border-b border-[var(--instagram-border)]">
+            <Link
+              href="/"
+              className="flex items-center gap-3 md:justify-center lg:justify-start"
+            >
+              <span className="text-2xl font-bold text-[var(--text-primary)] hidden md:hidden lg:inline">
+                Instagram
+              </span>
+              <span className="text-xl font-bold text-[var(--text-primary)] md:inline lg:hidden">
+                IG
+              </span>
+            </Link>
+          </div>
 
-        {/* Menu Items */}
-        <nav className="flex-1 px-3 py-4">
-          <SignedIn>
-            <ul className="space-y-1">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                const showLabel = !item.iconOnly;
+          {/* Menu Items */}
+          <nav className="flex-1 px-3 py-4">
+            <SignedIn>
+              <ul className="space-y-1">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  const showLabel = !item.iconOnly;
+                  const isCreateButton = item.href === "/create";
 
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
-                        "hover:bg-gray-50",
-                        isActive && "font-semibold"
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          "w-6 h-6",
-                          isActive
-                            ? "text-[var(--text-primary)]"
-                            : "text-[var(--text-primary)]"
-                        )}
-                      />
-                      {showLabel && (
-                        <span
+                  // "만들기" 버튼은 모달 열기
+                  if (isCreateButton) {
+                    return (
+                      <li key={item.href}>
+                        <button
+                          type="button"
+                          onClick={() => setIsCreatePostModalOpen(true)}
                           className={cn(
-                            "text-base hidden lg:inline",
-                            isActive
-                              ? "text-[var(--text-primary)] font-semibold"
-                              : "text-[var(--text-primary)]"
+                            "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                            "hover:bg-gray-50",
                           )}
                         >
-                          {item.label}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </SignedIn>
+                          <Icon className="w-6 h-6 text-[var(--text-primary)]" />
+                          {showLabel && (
+                            <span className="text-base hidden lg:inline text-[var(--text-primary)]">
+                              {item.label}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  }
 
-          <SignedOut>
-            <div className="px-3 py-2">
-              <SignInButton mode="modal">
-                <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50">
-                  <Menu className="w-6 h-6 text-[var(--text-primary)]" />
-                  <span className="text-base hidden lg:inline text-[var(--text-primary)]">
-                    로그인
-                  </span>
-                </button>
-              </SignInButton>
-            </div>
-          </SignedOut>
-        </nav>
-      </div>
-    </aside>
+                  // 일반 메뉴 아이템
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                          "hover:bg-gray-50",
+                          isActive && "font-semibold",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "w-6 h-6",
+                            isActive
+                              ? "text-[var(--text-primary)]"
+                              : "text-[var(--text-primary)]",
+                          )}
+                        />
+                        {showLabel && (
+                          <span
+                            className={cn(
+                              "text-base hidden lg:inline",
+                              isActive
+                                ? "text-[var(--text-primary)] font-semibold"
+                                : "text-[var(--text-primary)]",
+                            )}
+                          >
+                            {item.label}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </SignedIn>
+
+            <SignedOut>
+              <div className="px-3 py-2">
+                <SignInButton mode="modal">
+                  <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50">
+                    <Menu className="w-6 h-6 text-[var(--text-primary)]" />
+                    <span className="text-base hidden lg:inline text-[var(--text-primary)]">
+                      로그인
+                    </span>
+                  </button>
+                </SignInButton>
+              </div>
+            </SignedOut>
+          </nav>
+        </div>
+      </aside>
+
+      {/* 게시물 작성 모달 */}
+      <CreatePostModal
+        open={isCreatePostModalOpen}
+        onOpenChange={setIsCreatePostModalOpen}
+      />
+    </>
   );
 }
-

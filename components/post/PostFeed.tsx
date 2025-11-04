@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PostCard, PostCardProps } from "./PostCard";
 import { PostCardSkeleton } from "./PostCardSkeleton";
+import { setRefreshFeedCallback } from "./CreatePostModal";
 import type { PostsResponse } from "@/lib/types";
 
 /**
@@ -23,33 +24,41 @@ export function PostFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        console.group("[PostFeed] Fetching posts");
-        setLoading(true);
-        setError(null);
+  const fetchPosts = useCallback(async () => {
+    try {
+      console.group("[PostFeed] Fetching posts");
+      setLoading(true);
+      setError(null);
 
-        const response = await fetch("/api/posts?page=1&limit=10");
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch posts");
-        }
-
-        const data: PostsResponse = await response.json();
-        console.log("Fetched posts:", data.posts.length);
-        setPosts(data.posts);
-        console.groupEnd();
-      } catch (err) {
-        console.error("[PostFeed] Error:", err);
-        setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
-      } finally {
-        setLoading(false);
+      const response = await fetch("/api/posts?page=1&limit=10");
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
       }
-    };
 
-    fetchPosts();
+      const data: PostsResponse = await response.json();
+      console.log("Fetched posts:", data.posts.length);
+      setPosts(data.posts);
+      console.groupEnd();
+    } catch (err) {
+      console.error("[PostFeed] Error:", err);
+      setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPosts();
+    
+    // CreatePostModal에서 피드 새로고침을 위해 콜백 등록
+    setRefreshFeedCallback(fetchPosts);
+    
+    // 컴포넌트 언마운트 시 콜백 제거
+    return () => {
+      setRefreshFeedCallback(null);
+    };
+  }, [fetchPosts]);
 
   if (loading) {
     return (

@@ -132,28 +132,29 @@
 
 ## 2. 게시물 작성 & 댓글 기능
 
-### 
-2-1. 게시물 작성 모달
-- [ ] `components/post/CreatePostModal.tsx` 컴포넌트
-  - [ ] Dialog 모달 (shadcn/ui)
-  - [ ] 이미지 업로드 UI
-  - [ ] 이미지 미리보기
-  - [ ] 캡션 입력 필드 (최대 2,200자)
-  - [ ] "게시" 버튼
-- [ ] Sidebar "만들기" 버튼 클릭 시 모달 열기
+### 2-1. 게시물 작성 모달
+
+- [x] `components/post/CreatePostModal.tsx` 컴포넌트
+  - [x] Dialog 모달 (shadcn/ui)
+  - [x] 이미지 업로드 UI
+  - [x] 이미지 미리보기
+  - [x] 캡션 입력 필드 (최대 2,200자)
+  - [x] "게시" 버튼
+- [x] Sidebar "만들기" 버튼 클릭 시 모달 열기
+- [x] BottomNav "만들기" 버튼 클릭 시 모달 열기
 
 ### 2-2. 게시물 작성 - 이미지 업로드
 
-- [ ] `app/api/posts/route.ts` POST API
-  - [ ] 파일 업로드 검증 (최대 5MB)
-  - [ ] 이미지 타입 검증
-  - [ ] Supabase Storage에 업로드
-  - [ ] 업로드 경로: `{clerk_user_id}/{filename}`
-  - [ ] posts 테이블에 데이터 저장
-  - [ ] 업로드 후 피드 새로고침
-- [ ] 파일 업로드 로직
-  - [ ] FormData 처리
-  - [ ] 에러 핸들링
+- [x] `app/api/posts/route.ts` POST API
+  - [x] 파일 업로드 검증 (최대 5MB)
+  - [x] 이미지 타입 검증
+  - [x] Supabase Storage에 업로드
+  - [x] 업로드 경로: `{clerk_user_id}/{filename}`
+  - [x] posts 테이블에 데이터 저장
+  - [x] 업로드 후 피드 새로고침 (PostFeed 자동 새로고침)
+- [x] 파일 업로드 로직
+  - [x] FormData 처리
+  - [x] 에러 핸들링
 
 ### 2-3. 댓글 기능 - UI & 작성
 
