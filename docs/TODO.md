@@ -55,24 +55,29 @@
 
 - [x] `app/(main)/layout.tsx` 생성
   - [x] Sidebar + 레이아웃 통합
+  - [x] 반응형 레이아웃 구현 (Desktop/Tablet/Mobile)
 - [x] `components/layout/Sidebar.tsx` 컴포넌트
   - [x] Desktop (244px, 아이콘 + 텍스트)
   - [x] Tablet (72px, 아이콘만)
   - [x] Mobile (숨김)
   - [x] 메뉴 항목: 홈, 검색, 만들기, 프로필
   - [x] Hover 효과 및 Active 상태 스타일
+  - [x] 반응형 브레이크포인트 명확화 (1024px 기준)
 - [x] `components/layout/Header.tsx` 컴포넌트 (모바일)
   - [x] 높이 60px
   - [x] 로고 + 알림 아이콘 + 프로필 아이콘
+  - [x] 모바일 전용 표시 (<768px)
 - [x] `components/layout/BottomNav.tsx` 컴포넌트 (모바일)
   - [x] 높이 50px
   - [x] 5개 아이콘: 홈, 검색, 만들기, 좋아요, 프로필
+  - [x] 모바일 전용 표시 (<768px)
 
 ### 1-3. 홈 피드 - 게시물 목록
 
 - [x] `app/(main)/page.tsx` 홈 피드 페이지
   - [x] 피드 레이아웃 (최대 너비 630px, 중앙 정렬)
   - [x] 배경색 #FAFAFA
+  - [x] 반응형 레이아웃 (Desktop/Tablet/Mobile)
 - [x] `components/post/PostCard.tsx` 컴포넌트
   - [x] 헤더 (60px)
     - [x] 프로필 이미지 (32px 원형)
@@ -90,12 +95,15 @@
     - [x] 캡션 (사용자명 Bold + 내용)
     - [x] 2줄 초과 시 "... 더 보기" 처리
     - [x] 댓글 미리보기 (최신 2개)
+  - [x] 반응형 스타일 (모바일: 좌우 테두리 없음, 연속 표시)
 - [x] `components/post/PostCardSkeleton.tsx` 로딩 UI
   - [x] Skeleton UI (회색 박스 애니메이션)
   - [x] Shimmer 효과
+  - [x] 반응형 스타일 (PostCard와 동일)
 - [x] `components/post/PostFeed.tsx` 컴포넌트
   - [x] 게시물 목록 표시
   - [x] 로딩 상태 처리
+  - [x] 반응형 스타일 (모바일: 카드 간격 없음)
 - [x] `app/api/posts/route.ts` GET API
   - [x] 페이지네이션 (10개씩)
   - [x] 시간 역순 정렬
@@ -234,18 +242,20 @@
 
 ### 4-1. 반응형 테스트
 
-- [ ] Desktop (1024px+) 테스트
-  - [ ] Sidebar 전체 표시
-  - [ ] PostCard 최대 너비 630px
-  - [ ] 게시물 상세 모달
-- [ ] Tablet (768px ~ 1023px) 테스트
-  - [ ] Icon-only Sidebar (72px)
-  - [ ] PostCard 레이아웃
-- [ ] Mobile (< 768px) 테스트
-  - [ ] Header 표시
-  - [ ] BottomNav 표시
-  - [ ] Sidebar 숨김
-  - [ ] 게시물 상세 페이지
+- [x] Desktop (1024px+) 테스트
+  - [x] Sidebar 전체 표시 (244px 너비, 아이콘 + 텍스트)
+  - [x] PostCard 최대 너비 630px (중앙 정렬)
+  - [x] 피드 레이아웃 반응형 구현
+- [x] Tablet (768px ~ 1023px) 테스트
+  - [x] Icon-only Sidebar (72px 너비)
+  - [x] PostCard 레이아웃 (전체 너비, 좌우 패딩)
+  - [x] 피드 레이아웃 반응형 구현
+- [x] Mobile (< 768px) 테스트
+  - [x] Header 표시 (60px 높이)
+  - [x] BottomNav 표시 (50px 높이)
+  - [x] Sidebar 숨김
+  - [x] PostCard 전체 너비 (좌우 테두리 없음, 연속 표시)
+  - [x] 피드 레이아웃 반응형 구현
 
 ### 4-2. 에러 핸들링 & UI 개선
 

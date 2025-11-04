@@ -178,7 +178,7 @@ export function PostCard({
   };
 
   return (
-    <article className="bg-[var(--instagram-card)] border border-[var(--instagram-border)] rounded-lg mb-4">
+    <article className="bg-[var(--instagram-card)] border-x-0 md:border-x border-t border-b md:border border-[var(--instagram-border)] rounded-none md:rounded-lg mb-0 md:mb-4">
       {/* 헤더 (60px) */}
       <header className="h-[60px] flex items-center justify-between px-4">
         <div className="flex items-center gap-3">

@@ -61,7 +61,7 @@ export function PostFeed() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-0 md:space-y-4">
         {[...Array(3)].map((_, i) => (
           <PostCardSkeleton key={i} />
         ))}
@@ -87,7 +87,7 @@ export function PostFeed() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0 md:space-y-4">
       {posts.map((post) => (
         <PostCard key={post.id} {...post} />
       ))}

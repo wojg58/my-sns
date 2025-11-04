@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
  * @description Instagram 스타일 사이드바 컴포넌트
  *
  * 반응형 디자인:
- * - Desktop (1024px+): 244px 너비, 아이콘 + 텍스트
- * - Tablet (768px-1023px): 72px 너비, 아이콘만
- * - Mobile (<768px): 숨김
+ * - Desktop (1024px+): 244px 너비, 아이콘 + 텍스트, 로고 "Instagram"
+ * - Tablet (768px~1023px): 72px 너비, 아이콘만, 로고 "IG"
+ * - Mobile (<768px): 숨김 (Header와 BottomNav 사용)
  *
  * @dependencies
  * - next/link: 네비게이션
@@ -41,8 +41,11 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 h-screen bg-white border-r border-[var(--instagram-border)] z-50 hidden md:block">
-      {/* Desktop: 244px, Tablet: 72px */}
-      <div className="w-[244px] md:w-[72px] lg:w-[244px] h-full flex flex-col">
+      {/* 
+        Desktop (1024px+): 244px 너비
+        Tablet (768px~1023px): 72px 너비
+      */}
+      <div className="w-[72px] md:w-[72px] lg:w-[244px] h-full flex flex-col">
         {/* Logo */}
         <div className="px-6 md:px-4 lg:px-6 py-5 border-b border-[var(--instagram-border)]">
           <Link
