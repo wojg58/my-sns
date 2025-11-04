@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 
@@ -93,12 +93,17 @@ export function PostCard({
   caption,
   createdAt,
   user,
-  stats,
+  stats: initialStats,
   isLiked: initialIsLiked,
   recentComments = [],
 }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [likesCount, setLikesCount] = useState(initialStats.likesCount);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
+  const lastTapRef = useRef<number>(0);
+  const imageRef = useRef<HTMLDivElement>(null);
 
   // 상대 시간 계산
   const timeAgo = formatTimeAgo(createdAt);
@@ -106,10 +111,70 @@ export function PostCard({
   // 캡션 줄 수 계산 (대략적으로)
   const shouldTruncate = caption && caption.length > 100 && !showFullCaption;
 
-  const handleLikeClick = () => {
-    // TODO: 좋아요 API 호출 (1-4에서 구현 예정)
-    setIsLiked(!isLiked);
-    console.log("[PostCard] Like clicked:", { postId: id, isLiked: !isLiked });
+  // 좋아요 토글
+  const handleLikeClick = async () => {
+    const newIsLiked = !isLiked;
+    
+    // 낙관적 UI 업데이트
+    setIsLiked(newIsLiked);
+    setLikesCount((prev) => (newIsLiked ? prev + 1 : Math.max(0, prev - 1)));
+    setIsAnimating(true);
+
+    try {
+      console.group("[PostCard] Like toggle");
+      console.log("Post ID:", id, "Is liked:", newIsLiked);
+
+      const response = await fetch("/api/likes", {
+        method: newIsLiked ? "POST" : "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ postId: id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        
+        // 이미 좋아요한 경우 (409)는 상태를 되돌리지 않음
+        if (response.status === 409 && error.alreadyLiked) {
+          console.log("Already liked, keeping optimistic update");
+        } else {
+          // 다른 에러는 상태 되돌리기
+          throw new Error(error.error || "Failed to toggle like");
+        }
+      }
+
+      const data = await response.json();
+      console.log("Like toggle success:", data);
+      console.groupEnd();
+    } catch (error) {
+      console.error("[PostCard] Like toggle error:", error);
+      // 에러 발생 시 상태 되돌리기
+      setIsLiked(!newIsLiked);
+      setLikesCount((prev) => (!newIsLiked ? prev + 1 : Math.max(0, prev - 1)));
+    } finally {
+      // 애니메이션 종료
+      setTimeout(() => setIsAnimating(false), 150);
+    }
+  };
+
+  // 더블탭 좋아요 처리
+  const handleImageDoubleTap = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // 더블탭 감지
+      if (!isLiked) {
+        handleLikeClick();
+        // 큰 하트 애니메이션
+        setShowDoubleTapHeart(true);
+        setTimeout(() => setShowDoubleTapHeart(false), 1000);
+      }
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
   };
 
   return (
@@ -145,12 +210,29 @@ export function PostCard({
       </header>
 
       {/* 이미지 영역 (1:1 정사각형) */}
-      <div className="relative w-full aspect-square bg-gray-100">
+      <div
+        ref={imageRef}
+        className="relative w-full aspect-square bg-gray-100 cursor-pointer"
+        onDoubleClick={handleImageDoubleTap}
+      >
         <img
           src={imageUrl}
           alt={caption || "게시물 이미지"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover select-none"
+          draggable={false}
         />
+        
+        {/* 더블탭 하트 애니메이션 */}
+        {showDoubleTapHeart && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Heart
+              className="w-24 h-24 fill-[var(--like)] text-[var(--like)] animate-[heart-pop_1s_ease-out]"
+              style={{
+                animation: "heart-pop 1s ease-out",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* 액션 버튼 (48px) */}
@@ -160,12 +242,17 @@ export function PostCard({
           <button
             onClick={handleLikeClick}
             className="p-2 hover:opacity-70 transition-opacity"
+            disabled={isAnimating}
           >
             <Heart
-              className={`w-6 h-6 ${
+              className={`w-6 h-6 transition-transform duration-150 ${
                 isLiked
                   ? "fill-[var(--like)] text-[var(--like)]"
                   : "text-[var(--text-primary)]"
+              } ${
+                isAnimating
+                  ? "scale-[1.3]"
+                  : "scale-100"
               }`}
             />
           </button>
@@ -193,9 +280,9 @@ export function PostCard({
       {/* 컨텐츠 영역 */}
       <div className="px-4 pb-4 space-y-2">
         {/* 좋아요 수 */}
-        {stats.likesCount > 0 && (
+        {likesCount > 0 && (
           <div className="text-sm font-semibold text-[var(--text-primary)]">
-            좋아요 {stats.likesCount.toLocaleString()}개
+            좋아요 {likesCount.toLocaleString()}개
           </div>
         )}
 
