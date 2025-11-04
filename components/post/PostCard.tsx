@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import type { PostWithRelations } from "@/lib/types";
 
 /**
  * 상대 시간 포맷팅 함수
@@ -51,40 +52,38 @@ function formatTimeAgo(dateString: string): string {
  * - 컨텐츠: 좋아요 수, 캡션, 댓글 미리보기
  *
  * @dependencies
+ * - @/lib/types: 타입 정의
  * - lucide-react: 아이콘
- * - date-fns: 시간 포맷팅
  */
 
-interface PostUser {
-  id: string;
-  clerkId: string;
-  name: string;
-}
-
-interface PostComment {
-  id: string;
-  content: string;
-  createdAt: string;
-  user: {
-    id: string;
-    name: string;
-  };
-}
-
-interface PostStats {
-  likesCount: number;
-  commentsCount: number;
-}
-
+/**
+ * PostCard 컴포넌트 Props
+ * PostWithRelations 타입을 기반으로 하되, API 응답 형식에 맞게 조정
+ */
 export interface PostCardProps {
   id: string;
   imageUrl: string;
   caption: string | null;
   createdAt: string;
-  user: PostUser;
-  stats: PostStats;
+  user: {
+    id: string;
+    clerkId: string;
+    name: string;
+  };
+  stats: {
+    likesCount: number;
+    commentsCount: number;
+  };
   isLiked: boolean;
-  recentComments?: PostComment[];
+  recentComments?: Array<{
+    id: string;
+    content: string;
+    createdAt: string;
+    user: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 export function PostCard({

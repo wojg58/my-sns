@@ -50,6 +50,12 @@
   - [x] 뷰 및 트리거 확인
 - [x] Supabase Storage 버킷 생성
   - [x] `uploads` 버킷 생성 (대시보드에서 직접 생성)
+- [x] TypeScript 타입 정의
+  - [x] `lib/types.ts` 파일 생성
+  - [x] 데이터베이스 원본 타입 정의 (DatabaseUser, DatabasePost, DatabaseLike, DatabaseComment, DatabaseFollow)
+  - [x] 프론트엔드용 타입 정의 (User, Post, Like, Comment, Follow)
+  - [x] 확장 타입 정의 (PostWithRelations, CommentWithUser 등)
+  - [x] API 응답 타입 정의 (PostsResponse, LikeResponse 등)
 
 ### 1-2. 레이아웃 구조
 

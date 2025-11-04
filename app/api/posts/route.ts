@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClerkSupabaseClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
+import type { PostsResponse, PostWithRelations } from "@/lib/types";
 
 /**
  * @file app/api/posts/route.ts
@@ -121,34 +122,41 @@ export async function GET(request: NextRequest) {
     }
 
     // 데이터 조합
-    const postsWithStats = posts?.map((post) => {
+    const postsWithStats: PostWithRelations[] = posts?.map((post) => {
       const postStat = stats?.find((stat) => stat.post_id === post.id);
       const isLiked = userLikes.includes(post.id);
       
       // 해당 게시물의 최신 댓글 2개만 가져오기
-      const postComments = recentComments
+      const postComments: PostWithRelations["recentComments"] = recentComments
         ?.filter((comment) => comment.post_id === post.id)
         .slice(0, 2)
         .map((comment) => ({
           id: comment.id,
+          postId: comment.post_id,
+          userId: comment.user_id,
           content: comment.content,
           createdAt: comment.created_at,
+          updatedAt: comment.updated_at,
           user: {
             id: comment.users.id,
+            clerkId: comment.users.clerk_id,
             name: comment.users.name,
+            createdAt: comment.users.created_at || comment.created_at,
           },
         })) || [];
 
-      return {
+      const result: PostWithRelations = {
         id: post.id,
         imageUrl: post.image_url,
         caption: post.caption,
         createdAt: post.created_at,
         updatedAt: post.updated_at,
+        userId: post.user_id, // Post 타입에 userId 필드 추가 필요
         user: {
           id: post.users.id,
           clerkId: post.users.clerk_id,
           name: post.users.name,
+          createdAt: post.created_at, // users.created_at 사용
         },
         stats: {
           likesCount: postStat?.likes_count || 0,
@@ -157,12 +165,14 @@ export async function GET(request: NextRequest) {
         isLiked,
         recentComments: postComments,
       };
+
+      return result;
     }) || [];
 
     console.log(`Returning ${postsWithStats.length} posts with stats`);
     console.groupEnd();
 
-    return NextResponse.json({
+    const response: PostsResponse = {
       posts: postsWithStats,
       pagination: {
         page,
@@ -170,7 +180,9 @@ export async function GET(request: NextRequest) {
         total: postsWithStats.length,
         hasMore: postsWithStats.length === limit,
       },
-    });
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("[API] GET /api/posts error:", error);
     return NextResponse.json(

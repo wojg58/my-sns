@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PostCard, PostCardProps } from "./PostCard";
 import { PostCardSkeleton } from "./PostCardSkeleton";
+import type { PostsResponse } from "@/lib/types";
 
 /**
  * @file components/post/PostFeed.tsx
@@ -14,17 +15,8 @@ import { PostCardSkeleton } from "./PostCardSkeleton";
  * @dependencies
  * - @/components/post/PostCard: 게시물 카드 컴포넌트
  * - @/components/post/PostCardSkeleton: 로딩 스켈레톤
+ * - @/lib/types: 타입 정의
  */
-
-interface PostFeedResponse {
-  posts: PostCardProps[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    hasMore: boolean;
-  };
-}
 
 export function PostFeed() {
   const [posts, setPosts] = useState<PostCardProps[]>([]);
@@ -44,7 +36,7 @@ export function PostFeed() {
           throw new Error("Failed to fetch posts");
         }
 
-        const data: PostFeedResponse = await response.json();
+        const data: PostsResponse = await response.json();
         console.log("Fetched posts:", data.posts.length);
         setPosts(data.posts);
         console.groupEnd();
