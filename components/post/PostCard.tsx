@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { CommentForm } from "@/components/comment/CommentForm";
@@ -97,11 +97,16 @@ export function PostCard({
   const [showFullCaption, setShowFullCaption] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
+  const [timeAgo, setTimeAgo] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
   const lastTapRef = useRef<number>(0);
   const imageRef = useRef<HTMLDivElement>(null);
 
-  // 상대 시간 계산
-  const timeAgo = formatTimeAgo(createdAt);
+  // 클라이언트 마운트 확인
+  useEffect(() => {
+    setMounted(true);
+    setTimeAgo(formatTimeAgo(createdAt));
+  }, [createdAt]);
 
   // 캡션 줄 수 계산 (대략적으로)
   const shouldTruncate = caption && caption.length > 100 && !showFullCaption;
@@ -194,7 +199,9 @@ export function PostCard({
             >
               {user.name}
             </Link>
-            <span className="text-xs text-[var(--text-secondary)]">{timeAgo}</span>
+            <span className="text-xs text-[var(--text-secondary)]" suppressHydrationWarning>
+              {mounted ? timeAgo : "방금 전"}
+            </span>
           </div>
         </div>
 
