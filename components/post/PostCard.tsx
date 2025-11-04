@@ -3,7 +3,9 @@
 import { useState, useRef } from "react";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import type { PostWithRelations } from "@/lib/types";
+import { CommentForm } from "@/components/comment/CommentForm";
+import { CommentList } from "@/components/comment/CommentList";
+import type { PostWithRelations, CommentWithUser } from "@/lib/types";
 
 /**
  * 상대 시간 포맷팅 함수
@@ -75,15 +77,7 @@ export interface PostCardProps {
     commentsCount: number;
   };
   isLiked: boolean;
-  recentComments?: Array<{
-    id: string;
-    content: string;
-    createdAt: string;
-    user: {
-      id: string;
-      name: string;
-    };
-  }>;
+  recentComments?: CommentWithUser[];
 }
 
 export function PostCard({
@@ -98,6 +92,8 @@ export function PostCard({
 }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(initialStats.likesCount);
+  const [commentsCount, setCommentsCount] = useState(initialStats.commentsCount);
+  const [comments, setComments] = useState<CommentWithUser[]>(recentComments);
   const [showFullCaption, setShowFullCaption] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
@@ -312,30 +308,29 @@ export function PostCard({
           </div>
         )}
 
-        {/* 댓글 미리보기 */}
-        {stats.commentsCount > 0 && (
-          <div className="space-y-1">
-            {stats.commentsCount > recentComments.length && (
-              <Link
-                href={`/post/${id}`}
-                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              >
-                댓글 {stats.commentsCount}개 모두 보기
-              </Link>
-            )}
-            {recentComments.slice(0, 2).map((comment) => (
-              <div key={comment.id} className="text-sm">
-                <span className="font-semibold text-[var(--text-primary)] mr-1">
-                  {comment.user.name}
-                </span>
-                <span className="text-[var(--text-primary)]">
-                  {comment.content}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* 댓글 목록 */}
+        <CommentList
+          comments={comments}
+          totalCount={commentsCount}
+          showAllLink={true}
+          maxPreview={2}
+          postId={id}
+        />
       </div>
+
+      {/* 댓글 작성 폼 */}
+      <CommentForm
+        postId={id}
+        onCommentAdded={(newComment) => {
+          console.log("[PostCard] New comment added:", newComment.id);
+          
+          // 댓글 목록에 추가 (최신순으로 정렬)
+          setComments((prev) => [newComment, ...prev].slice(0, 2));
+          
+          // 댓글 수 증가
+          setCommentsCount((prev) => prev + 1);
+        }}
+      />
     </article>
   );
 }

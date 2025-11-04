@@ -158,13 +158,19 @@
 
 ### 2-3. 댓글 기능 - UI & 작성
 
-- [ ] `components/comment/CommentList.tsx` 컴포넌트
-  - [ ] 댓글 목록 표시
-  - [ ] PostCard: 최신 2개 미리보기
-  - [ ] 상세 모달: 전체 댓글 + 스크롤
-- [ ] `components/comment/CommentForm.tsx` 컴포넌트
-  - [ ] "댓글 달기..." 입력창
-  - [ ] Enter 키 또는 "게시" 버튼으로 댓글 작성
+- [x] `components/comment/CommentList.tsx` 컴포넌트
+  - [x] 댓글 목록 표시
+  - [x] PostCard: 최신 2개 미리보기
+  - [x] "모두 보기" 링크 (게시물 상세 페이지로)
+- [x] `components/comment/CommentForm.tsx` 컴포넌트
+  - [x] "댓글 달기..." 입력창
+  - [x] Enter 키 또는 "게시" 버튼으로 댓글 작성
+  - [x] 최대 2,200자 제한
+  - [x] 글자 수 표시 (90% 이상일 때)
+- [x] PostCard에 댓글 기능 통합
+  - [x] CommentForm 통합
+  - [x] CommentList 통합
+  - [x] 댓글 작성 후 UI 업데이트 (최신 댓글 반영, 댓글 수 증가)
 - [x] `app/api/comments/route.ts` POST API
   - [x] 댓글 작성
   - [x] 사용자 인증 확인
