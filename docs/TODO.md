@@ -9,97 +9,97 @@
 - [ ] `.github/` 디렉토리
 - [ ] `.husky/` 디렉토리
 - [ ] `app/` 디렉토리 기본 파일
-  - [ ] `favicon.ico` 파일
+  - [x] `favicon.ico` 파일
   - [ ] `not-found.tsx` 파일
   - [ ] `robots.ts` 파일
   - [ ] `sitemap.ts` 파일
   - [ ] `manifest.ts` 파일
 - [ ] `public/` 디렉토리
-  - [ ] `icons/` 디렉토리
-  - [ ] `logo.png` 파일
-  - [ ] `og-image.png` 파일
+  - [x] `icons/` 디렉토리
+  - [x] `logo.png` 파일
+  - [x] `og-image.png` 파일
 - [ ] 프로젝트 설정 파일
-  - [ ] `tsconfig.json` 파일
-  - [ ] `.cursorignore` 파일
-  - [ ] `.gitignore` 파일
-  - [ ] `.prettierignore` 파일
-  - [ ] `.prettierrc` 파일
-  - [ ] `eslint.config.mjs` 파일
-  - [ ] `AGENTS.md` 파일
+  - [x] `tsconfig.json` 파일
+  - [x] `.cursorignore` 파일
+  - [x] `.gitignore` 파일
+  - [x] `.prettierignore` 파일
+  - [x] `.prettierrc` 파일
+  - [x] `eslint.config.mjs` 파일
+  - [x] `AGENTS.md` 파일
 
 ## 1. 홈 피드 페이지
 
 ### 1-1. 기본 세팅
 
-- [ ] Next.js + TypeScript 프로젝트 생성
-- [ ] Tailwind CSS 설정 (인스타 컬러 스키마)
-  - [ ] `globals.css`에 Instagram 컬러 변수 추가
-  - [ ] 타이포그래피 설정
-- [ ] Clerk 인증 연동 (한국어 설정)
-  - [ ] Clerk 프로젝트 생성
-  - [ ] 환경 변수 설정
-  - [ ] `middleware.ts` 설정
-  - [ ] `ClerkProvider` 설정
-- [ ] Supabase 프로젝트 생성 및 연동
-  - [ ] Supabase 프로젝트 생성
-  - [ ] 환경 변수 설정
-  - [ ] Supabase 클라이언트 설정 (`lib/supabase/`)
-- [ ] 데이터베이스 마이그레이션 확인
-  - [ ] `sns_schema.sql` 마이그레이션 적용 확인
-  - [ ] 테이블 생성 확인 (users, posts, likes, comments, follows)
-  - [ ] 뷰 및 트리거 확인
-- [ ] Supabase Storage 버킷 생성
-  - [ ] `uploads` 버킷 생성 (대시보드에서 직접 생성)
+- [x] Next.js + TypeScript 프로젝트 생성
+- [x] Tailwind CSS 설정 (인스타 컬러 스키마)
+  - [x] `globals.css`에 Instagram 컬러 변수 추가
+  - [x] 타이포그래피 설정
+- [x] Clerk 인증 연동 (한국어 설정)
+  - [x] Clerk 프로젝트 생성
+  - [x] 환경 변수 설정
+  - [x] `middleware.ts` 설정
+  - [x] `ClerkProvider` 설정
+- [x] Supabase 프로젝트 생성 및 연동
+  - [x] Supabase 프로젝트 생성
+  - [x] 환경 변수 설정
+  - [x] Supabase 클라이언트 설정 (`lib/supabase/`)
+- [x] 데이터베이스 마이그레이션 확인
+  - [x] `sns_schema.sql` 마이그레이션 적용 확인
+  - [x] 테이블 생성 확인 (users, posts, likes, comments, follows)
+  - [x] 뷰 및 트리거 확인
+- [x] Supabase Storage 버킷 생성
+  - [x] `uploads` 버킷 생성 (대시보드에서 직접 생성)
 
 ### 1-2. 레이아웃 구조
 
-- [ ] `app/(main)/layout.tsx` 생성
-  - [ ] Sidebar + 레이아웃 통합
-- [ ] `components/layout/Sidebar.tsx` 컴포넌트
-  - [ ] Desktop (244px, 아이콘 + 텍스트)
-  - [ ] Tablet (72px, 아이콘만)
-  - [ ] Mobile (숨김)
-  - [ ] 메뉴 항목: 홈, 검색, 만들기, 프로필
-  - [ ] Hover 효과 및 Active 상태 스타일
-- [ ] `components/layout/Header.tsx` 컴포넌트 (모바일)
-  - [ ] 높이 60px
-  - [ ] 로고 + 알림 아이콘 + 프로필 아이콘
-- [ ] `components/layout/BottomNav.tsx` 컴포넌트 (모바일)
-  - [ ] 높이 50px
-  - [ ] 5개 아이콘: 홈, 검색, 만들기, 좋아요, 프로필
+- [x] `app/(main)/layout.tsx` 생성
+  - [x] Sidebar + 레이아웃 통합
+- [x] `components/layout/Sidebar.tsx` 컴포넌트
+  - [x] Desktop (244px, 아이콘 + 텍스트)
+  - [x] Tablet (72px, 아이콘만)
+  - [x] Mobile (숨김)
+  - [x] 메뉴 항목: 홈, 검색, 만들기, 프로필
+  - [x] Hover 효과 및 Active 상태 스타일
+- [x] `components/layout/Header.tsx` 컴포넌트 (모바일)
+  - [x] 높이 60px
+  - [x] 로고 + 알림 아이콘 + 프로필 아이콘
+- [x] `components/layout/BottomNav.tsx` 컴포넌트 (모바일)
+  - [x] 높이 50px
+  - [x] 5개 아이콘: 홈, 검색, 만들기, 좋아요, 프로필
 
 ### 1-3. 홈 피드 - 게시물 목록
 
-- [ ] `app/(main)/page.tsx` 홈 피드 페이지
-  - [ ] 피드 레이아웃 (최대 너비 630px, 중앙 정렬)
-  - [ ] 배경색 #FAFAFA
-- [ ] `components/post/PostCard.tsx` 컴포넌트
-  - [ ] 헤더 (60px)
-    - [ ] 프로필 이미지 (32px 원형)
-    - [ ] 사용자명 (Bold)
-    - [ ] 시간 표시 (작고 회색)
-    - [ ] ⋯ 메뉴 버튼 (우측)
-  - [ ] 이미지 영역 (1:1 정사각형)
-  - [ ] 액션 버튼 (48px)
-    - [ ] ❤️ 좋아요 버튼 (좌측)
-    - [ ] 💬 댓글 버튼 (좌측)
-    - [ ] ✈️ 공유 버튼 (좌측, UI만)
-    - [ ] 🔖 북마크 버튼 (우측, UI만)
-  - [ ] 컨텐츠 영역
-    - [ ] 좋아요 수 표시 (Bold)
-    - [ ] 캡션 (사용자명 Bold + 내용)
-    - [ ] 2줄 초과 시 "... 더 보기" 처리
-    - [ ] 댓글 미리보기 (최신 2개)
-- [ ] `components/post/PostCardSkeleton.tsx` 로딩 UI
-  - [ ] Skeleton UI (회색 박스 애니메이션)
-  - [ ] Shimmer 효과
-- [ ] `components/post/PostFeed.tsx` 컴포넌트
-  - [ ] 게시물 목록 표시
-  - [ ] 로딩 상태 처리
-- [ ] `app/api/posts/route.ts` GET API
-  - [ ] 페이지네이션 (10개씩)
-  - [ ] 시간 역순 정렬
-  - [ ] 게시물 + 사용자 정보 + 통계 조인
+- [x] `app/(main)/page.tsx` 홈 피드 페이지
+  - [x] 피드 레이아웃 (최대 너비 630px, 중앙 정렬)
+  - [x] 배경색 #FAFAFA
+- [x] `components/post/PostCard.tsx` 컴포넌트
+  - [x] 헤더 (60px)
+    - [x] 프로필 이미지 (32px 원형)
+    - [x] 사용자명 (Bold)
+    - [x] 시간 표시 (작고 회색)
+    - [x] ⋯ 메뉴 버튼 (우측)
+  - [x] 이미지 영역 (1:1 정사각형)
+  - [x] 액션 버튼 (48px)
+    - [x] ❤️ 좋아요 버튼 (좌측)
+    - [x] 💬 댓글 버튼 (좌측)
+    - [x] ✈️ 공유 버튼 (좌측, UI만)
+    - [x] 🔖 북마크 버튼 (우측, UI만)
+  - [x] 컨텐츠 영역
+    - [x] 좋아요 수 표시 (Bold)
+    - [x] 캡션 (사용자명 Bold + 내용)
+    - [x] 2줄 초과 시 "... 더 보기" 처리
+    - [x] 댓글 미리보기 (최신 2개)
+- [x] `components/post/PostCardSkeleton.tsx` 로딩 UI
+  - [x] Skeleton UI (회색 박스 애니메이션)
+  - [x] Shimmer 효과
+- [x] `components/post/PostFeed.tsx` 컴포넌트
+  - [x] 게시물 목록 표시
+  - [x] 로딩 상태 처리
+- [x] `app/api/posts/route.ts` GET API
+  - [x] 페이지네이션 (10개씩)
+  - [x] 시간 역순 정렬
+  - [x] 게시물 + 사용자 정보 + 통계 조인
 
 ### 1-4. 홈 피드 - 좋아요 기능
 
