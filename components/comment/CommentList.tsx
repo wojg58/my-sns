@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { MoreHorizontal, Trash2 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import type { CommentWithUser } from "@/lib/types";
 
 /**
@@ -23,6 +25,7 @@ interface CommentListProps {
   maxPreview?: number; // 미리보기 최대 개수 (기본: 2)
   postId?: string; // 게시물 ID (링크용)
   className?: string;
+  onCommentDeleted?: (commentId: string) => void; // 댓글 삭제 콜백
 }
 
 /**
@@ -68,11 +71,52 @@ export function CommentList({
   maxPreview = 2,
   postId,
   className = "",
+  onCommentDeleted,
 }: CommentListProps) {
+  const { user } = useUser();
   const [displayedComments, setDisplayedComments] = useState<CommentWithUser[]>(
     []
   );
   const [showAll, setShowAll] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+
+  // 댓글 삭제 핸들러
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) {
+      return;
+    }
+
+    setDeletingCommentId(commentId);
+    setOpenMenuId(null);
+
+    try {
+      console.group("[CommentList] Deleting comment");
+      console.log("Comment ID:", commentId);
+
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "댓글 삭제에 실패했습니다.");
+      }
+
+      console.log("Comment deleted successfully");
+      console.groupEnd();
+
+      // 콜백 호출 (댓글 목록에서 제거, 댓글 수 감소 등)
+      if (onCommentDeleted) {
+        onCommentDeleted(commentId);
+      }
+    } catch (err) {
+      console.error("[CommentList] Delete error:", err);
+      alert(err instanceof Error ? err.message : "댓글 삭제에 실패했습니다.");
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
 
   // 댓글 목록 업데이트
   useEffect(() => {
@@ -106,18 +150,70 @@ export function CommentList({
       )}
 
       {/* 댓글 목록 */}
-      {displayedComments.map((comment) => (
-        <div key={comment.id} className="text-sm">
-          <span className="font-semibold text-[var(--text-primary)] mr-1">
-            {comment.user.name}
-          </span>
-          <span className="text-[var(--text-primary)]">{comment.content}</span>
-          {/* 시간 표시 (상세 모달에서만 표시할 수도 있음) */}
-          {/* <span className="text-xs text-[var(--text-secondary)] ml-2">
-            {formatTimeAgo(comment.createdAt)}
-          </span> */}
-        </div>
-      ))}
+      {displayedComments.map((comment) => {
+        const isOwnComment = user?.id === comment.user.clerkId;
+        const isMenuOpen = openMenuId === comment.id;
+        const isDeleting = deletingCommentId === comment.id;
+
+        return (
+          <div key={comment.id} className="text-sm flex items-start group relative">
+            <div className="flex-1">
+              <span className="font-semibold text-[var(--text-primary)] mr-1">
+                {comment.user.name}
+              </span>
+              <span className="text-[var(--text-primary)]">{comment.content}</span>
+            </div>
+            
+            {/* 삭제 버튼 (본인 댓글만) */}
+            {isOwnComment && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenMenuId(isMenuOpen ? null : comment.id)}
+                  className="p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 rounded"
+                  disabled={isDeleting}
+                  aria-label="댓글 메뉴"
+                >
+                  <MoreHorizontal className="w-4 h-4 text-[var(--text-secondary)]" />
+                </button>
+                
+                {/* 메뉴 드롭다운 */}
+                {isMenuOpen && (
+                  <>
+                    {/* 백드롭 */}
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setOpenMenuId(null)}
+                    />
+                    
+                    {/* 메뉴 */}
+                    <div className="absolute right-0 top-6 bg-white border border-[var(--instagram-border)] rounded-lg shadow-lg z-20 min-w-[120px]">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        disabled={isDeleting}
+                        className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <span className="animate-spin">⏳</span>
+                            <span>삭제 중...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4" />
+                            <span>삭제</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {/* "더 보기" 버튼 (클라이언트 사이드에서 더 보기) */}
       {!showAll && hasMoreComments && !postId && (

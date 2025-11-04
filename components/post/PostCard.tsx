@@ -315,6 +315,15 @@ export function PostCard({
           showAllLink={true}
           maxPreview={2}
           postId={id}
+          onCommentDeleted={(commentId) => {
+            console.log("[PostCard] Comment deleted:", commentId);
+            
+            // 댓글 목록에서 제거
+            setComments((prev) => prev.filter((c) => c.id !== commentId));
+            
+            // 댓글 수 감소
+            setCommentsCount((prev) => Math.max(0, prev - 1));
+          }}
         />
       </div>
 

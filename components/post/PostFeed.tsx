@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { PostCard, PostCardProps } from "./PostCard";
 import { PostCardSkeleton } from "./PostCardSkeleton";
 import { setRefreshFeedCallback } from "./CreatePostModal";
@@ -22,43 +22,93 @@ import type { PostsResponse } from "@/lib/types";
 export function PostFeed() {
   const [posts, setPosts] = useState<PostCardProps[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (pageNum: number, append = false) => {
     try {
-      console.group("[PostFeed] Fetching posts");
-      setLoading(true);
+      console.group("[PostFeed] Fetching posts", { page: pageNum, append });
+      
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
-      const response = await fetch("/api/posts?page=1&limit=10");
+      const response = await fetch(`/api/posts?page=${pageNum}&limit=10`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch posts");
       }
 
       const data: PostsResponse = await response.json();
-      console.log("Fetched posts:", data.posts.length);
-      setPosts(data.posts);
+      console.log("Fetched posts:", data.posts.length, "Has more:", data.pagination.hasMore);
+      
+      if (append) {
+        setPosts((prev) => [...prev, ...data.posts]);
+      } else {
+        setPosts(data.posts);
+      }
+      
+      setHasMore(data.pagination.hasMore);
       console.groupEnd();
     } catch (err) {
       console.error("[PostFeed] Error:", err);
       setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
+  // 초기 로드 및 새로고침
+  const refreshFeed = useCallback(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchPosts(1, false);
+  }, [fetchPosts]);
+
   useEffect(() => {
-    fetchPosts();
+    refreshFeed();
     
     // CreatePostModal에서 피드 새로고침을 위해 콜백 등록
-    setRefreshFeedCallback(fetchPosts);
+    setRefreshFeedCallback(refreshFeed);
     
     // 컴포넌트 언마운트 시 콜백 제거
     return () => {
       setRefreshFeedCallback(null);
     };
-  }, [fetchPosts]);
+  }, [refreshFeed]);
+
+  // Intersection Observer로 무한 스크롤 구현
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          const nextPage = page + 1;
+          console.log("[PostFeed] Loading more posts, page:", nextPage);
+          setPage(nextPage);
+          fetchPosts(nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, loading, loadingMore, page, fetchPosts]);
 
   if (loading) {
     return (
@@ -88,11 +138,33 @@ export function PostFeed() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-4">
-      {posts.map((post) => (
-        <PostCard key={post.id} {...post} />
-      ))}
-    </div>
+    <>
+      <div className="space-y-0 md:space-y-4">
+        {posts.map((post) => (
+          <PostCard key={post.id} {...post} />
+        ))}
+      </div>
+
+      {/* 무한 스크롤 감지 타겟 */}
+      {hasMore && (
+        <div ref={observerTarget} className="h-20 flex items-center justify-center">
+          {loadingMore && (
+            <div className="space-y-0 md:space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <PostCardSkeleton key={`loading-${i}`} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 더 이상 로드할 게시물이 없는 경우 */}
+      {!hasMore && posts.length > 0 && (
+        <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+          모든 게시물을 불러왔습니다.
+        </div>
+      )}
+    </>
   );
 }
 
