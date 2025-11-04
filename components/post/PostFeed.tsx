@@ -48,10 +48,22 @@ export function PostFeed() {
       const data: PostsResponse = await response.json();
       console.log("Fetched posts:", data.posts.length, "Has more:", data.pagination.hasMore);
       
+      // PostWithRelations를 PostCardProps로 변환 (isLiked가 optional이므로 기본값 설정)
+      const postsAsCardProps: PostCardProps[] = data.posts.map((post) => ({
+        id: post.id,
+        imageUrl: post.imageUrl,
+        caption: post.caption,
+        createdAt: post.createdAt,
+        user: post.user,
+        stats: post.stats,
+        isLiked: post.isLiked ?? false, // 기본값 false
+        recentComments: post.recentComments,
+      }));
+      
       if (append) {
-        setPosts((prev) => [...prev, ...data.posts]);
+        setPosts((prev) => [...prev, ...postsAsCardProps]);
       } else {
-        setPosts(data.posts);
+        setPosts(postsAsCardProps);
       }
       
       setHasMore(data.pagination.hasMore);
