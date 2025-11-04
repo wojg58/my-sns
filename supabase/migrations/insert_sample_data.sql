@@ -144,7 +144,7 @@ DECLARE
   user2_id UUID;
   user3_id UUID;
   post_ids UUID[];
-  post_id UUID;
+  current_post_id UUID;
 BEGIN
   -- 사용자 ID 가져오기
   SELECT id INTO user1_id FROM public.users WHERE clerk_id = 'user_sample_001';
@@ -156,26 +156,26 @@ BEGIN
 
   -- 각 게시물에 랜덤하게 좋아요 추가
   IF post_ids IS NOT NULL THEN
-    FOREACH post_id IN ARRAY post_ids
+    FOREACH current_post_id IN ARRAY post_ids
     LOOP
       -- 사용자1이 일부 게시물에 좋아요
       IF random() > 0.3 THEN
         INSERT INTO public.likes (post_id, user_id, created_at)
-        VALUES (post_id, user1_id, now() - INTERVAL '1 day')
+        VALUES (current_post_id, user1_id, now() - INTERVAL '1 day')
         ON CONFLICT (post_id, user_id) DO NOTHING;
       END IF;
 
       -- 사용자2가 일부 게시물에 좋아요
       IF random() > 0.4 THEN
         INSERT INTO public.likes (post_id, user_id, created_at)
-        VALUES (post_id, user2_id, now() - INTERVAL '2 days')
+        VALUES (current_post_id, user2_id, now() - INTERVAL '2 days')
         ON CONFLICT (post_id, user_id) DO NOTHING;
       END IF;
 
       -- 사용자3이 일부 게시물에 좋아요
       IF random() > 0.5 THEN
         INSERT INTO public.likes (post_id, user_id, created_at)
-        VALUES (post_id, user3_id, now() - INTERVAL '3 days')
+        VALUES (current_post_id, user3_id, now() - INTERVAL '3 days')
         ON CONFLICT (post_id, user_id) DO NOTHING;
       END IF;
     END LOOP;
@@ -191,7 +191,7 @@ DECLARE
   user2_id UUID;
   user3_id UUID;
   post_ids UUID[];
-  post_id UUID;
+  current_post_id UUID;
 BEGIN
   -- 사용자 ID 가져오기
   SELECT id INTO user1_id FROM public.users WHERE clerk_id = 'user_sample_001';
@@ -203,13 +203,13 @@ BEGIN
 
   -- 각 게시물에 댓글 추가
   IF post_ids IS NOT NULL AND user1_id IS NOT NULL AND user2_id IS NOT NULL AND user3_id IS NOT NULL THEN
-    FOREACH post_id IN ARRAY post_ids
+    FOREACH current_post_id IN ARRAY post_ids
     LOOP
       -- 사용자1이 댓글 작성
       IF random() > 0.5 THEN
         INSERT INTO public.comments (post_id, user_id, content, created_at)
         VALUES (
-          post_id,
+          current_post_id,
           user1_id,
           CASE (random() * 3)::int
             WHEN 0 THEN '정말 멋진 사진이네요!'
@@ -224,7 +224,7 @@ BEGIN
       IF random() > 0.6 THEN
         INSERT INTO public.comments (post_id, user_id, content, created_at)
         VALUES (
-          post_id,
+          current_post_id,
           user2_id,
           CASE (random() * 3)::int
             WHEN 0 THEN '와우!'
@@ -239,7 +239,7 @@ BEGIN
       IF random() > 0.7 THEN
         INSERT INTO public.comments (post_id, user_id, content, created_at)
         VALUES (
-          post_id,
+          current_post_id,
           user3_id,
           CASE (random() * 3)::int
             WHEN 0 THEN '좋아요!'

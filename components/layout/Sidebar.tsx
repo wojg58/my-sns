@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { Home, Search, SquarePlus, User, Heart, Menu } from "lucide-react";
+import { Home, Search, SquarePlus, User, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreatePostModal } from "@/components/post/CreatePostModal";
 
@@ -24,11 +24,10 @@ import { CreatePostModal } from "@/components/post/CreatePostModal";
  */
 
 const menuItems = [
-  { icon: Home, label: "홈", href: "/", iconOnly: false },
-  { icon: Search, label: "검색", href: "/search", iconOnly: true },
-  { icon: SquarePlus, label: "만들기", href: "/create", iconOnly: false },
-  { icon: Heart, label: "활동", href: "/activity", iconOnly: true },
-  { icon: User, label: "프로필", href: "/profile", iconOnly: false },
+  { icon: Home, label: "홈", href: "/" },
+  { icon: Search, label: "검색", href: "/search" },
+  { icon: SquarePlus, label: "만들기", href: "/create" },
+  { icon: User, label: "프로필", href: "/profile" },
 ];
 
 export function Sidebar() {
@@ -39,8 +38,8 @@ export function Sidebar() {
     <>
       <aside className="fixed left-0 top-0 h-screen bg-white border-r border-[var(--instagram-border)] z-50 hidden md:block">
         {/* 
-        Desktop (1024px+): 244px 너비
-        Tablet (768px~1023px): 72px 너비
+        Desktop (1024px+): 244px 너비, 아이콘 + 텍스트
+        Tablet (768px~1023px): 72px 너비, 아이콘만
       */}
         <div className="w-[72px] md:w-[72px] lg:w-[244px] h-full flex flex-col">
           {/* Logo */}
@@ -65,7 +64,6 @@ export function Sidebar() {
                 {menuItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
-                  const showLabel = !item.iconOnly;
                   const isCreateButton = item.href === "/create";
 
                   // "만들기" 버튼은 모달 열기
@@ -81,11 +79,9 @@ export function Sidebar() {
                           )}
                         >
                           <Icon className="w-6 h-6 text-[var(--text-primary)]" />
-                          {showLabel && (
-                            <span className="text-base hidden lg:inline text-[var(--text-primary)]">
-                              {item.label}
-                            </span>
-                          )}
+                          <span className="text-base hidden lg:inline text-[var(--text-primary)]">
+                            {item.label}
+                          </span>
                         </button>
                       </li>
                     );
@@ -110,18 +106,16 @@ export function Sidebar() {
                               : "text-[var(--text-primary)]",
                           )}
                         />
-                        {showLabel && (
-                          <span
-                            className={cn(
-                              "text-base hidden lg:inline",
-                              isActive
-                                ? "text-[var(--text-primary)] font-semibold"
-                                : "text-[var(--text-primary)]",
-                            )}
-                          >
-                            {item.label}
-                          </span>
-                        )}
+                        <span
+                          className={cn(
+                            "text-base hidden lg:inline",
+                            isActive
+                              ? "text-[var(--text-primary)] font-semibold"
+                              : "text-[var(--text-primary)]",
+                          )}
+                        >
+                          {item.label}
+                        </span>
                       </Link>
                     </li>
                   );
