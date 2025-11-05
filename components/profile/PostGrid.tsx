@@ -96,6 +96,7 @@ export function PostGrid({ userId }: PostGridProps) {
 
   return (
     <div className="bg-white border border-[var(--instagram-border)] rounded-sm">
+      {/* 3열 그리드 레이아웃 (모바일/태블릿/데스크탑 모두 3열 고정) */}
       <div className="grid grid-cols-3 gap-1">
         {posts.map((post) => (
           <PostThumbnail key={post.id} post={post} />
@@ -115,10 +116,12 @@ function PostThumbnail({ post }: { post: PostWithRelations }) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     // Desktop (1024px+)에서는 모달, Mobile에서는 페이지 이동
-    if (window.innerWidth >= 1024) {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       setIsModalOpen(true);
     } else {
-      window.location.href = `/post/${post.id}`;
+      if (typeof window !== "undefined") {
+        window.location.href = `/post/${post.id}`;
+      }
     }
   };
 
