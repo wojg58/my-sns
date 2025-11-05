@@ -2,10 +2,21 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Send,
+  Bookmark,
+  MoreHorizontal,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { CommentForm, type CommentFormRef } from "@/components/comment/CommentForm";
+import {
+  CommentForm,
+  type CommentFormRef,
+} from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
 import { PostModal } from "@/components/post/PostModal";
 import { EditPostModal } from "@/components/post/EditPostModal";
@@ -98,7 +109,9 @@ export function PostCard({
   const { user: clerkUser } = useUser();
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(initialStats.likesCount);
-  const [commentsCount, setCommentsCount] = useState(initialStats.commentsCount);
+  const [commentsCount, setCommentsCount] = useState(
+    initialStats.commentsCount,
+  );
   const [comments, setComments] = useState<CommentWithUser[]>(recentComments);
   const [showFullCaption, setShowFullCaption] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -175,35 +188,39 @@ export function PostCard({
   };
 
   // 이미지 클릭 시 모달 열기 (Desktop) 또는 페이지 이동 (Mobile)
-  // 더블탭 감지를 위해 지연 실행
+  // 더블탭 감지를 위해 지연 실행 (지연 시간 단축)
   const handleImageClick = () => {
-    console.log("[PostCard] 이미지 클릭, 기존 타임아웃:", singleClickTimeoutRef.current);
-    
+    console.log(
+      "[PostCard] 이미지 클릭, 기존 타임아웃:",
+      singleClickTimeoutRef.current,
+    );
+
     // 기존 타임아웃이 있으면 취소하고 더블탭 처리
     if (singleClickTimeoutRef.current) {
       console.log("[PostCard] 기존 타임아웃 취소 (더블탭 감지)");
       clearTimeout(singleClickTimeoutRef.current);
       singleClickTimeoutRef.current = null;
-      
+
       // 더블탭 처리 (좋아요 토글)
       console.log("[PostCard] 더블탭으로 좋아요 토글 실행");
       console.log("[PostCard] 현재 좋아요 상태:", isLiked);
-      
+
       // 좋아요 토글 실행
       handleLikeClick();
-      
+
       // 좋아요가 활성화되는 경우에만 큰 하트 애니메이션 표시
       if (!isLiked) {
         console.log("[PostCard] 하트 애니메이션 표시");
         setShowDoubleTapHeart(true);
         setTimeout(() => setShowDoubleTapHeart(false), 1000);
       }
-      
+
       return; // 더블탭이므로 싱글 클릭 취소
     }
 
     console.log("[PostCard] 싱글 클릭 타임아웃 설정");
     // 싱글 클릭은 약간 지연 후 실행 (더블탭 감지 시간 동안 대기)
+    // 지연 시간을 300ms에서 150ms로 단축하여 더 빠른 반응성 제공
     singleClickTimeoutRef.current = setTimeout(() => {
       console.log("[PostCard] 싱글 클릭 실행");
       singleClickTimeoutRef.current = null;
@@ -216,13 +233,13 @@ export function PostCard({
         console.log("[PostCard] Mobile - 페이지 이동");
         router.push(`/post/${id}`);
       }
-    }, 300); // 더블탭 감지 시간과 동일
+    }, 150); // 더블탭 감지 시간을 150ms로 단축 (더 빠른 반응)
   };
 
   // 좋아요 토글
   const handleLikeClick = async () => {
     const newIsLiked = !isLiked;
-    
+
     // 낙관적 UI 업데이트
     setIsLiked(newIsLiked);
     setLikesCount((prev) => (newIsLiked ? prev + 1 : Math.max(0, prev - 1)));
@@ -242,7 +259,7 @@ export function PostCard({
 
       if (!response.ok) {
         const error = await response.json();
-        
+
         // 이미 좋아요한 경우 (409)는 상태를 되돌리지 않음
         if (response.status === 409 && error.alreadyLiked) {
           console.log("Already liked, keeping optimistic update");
@@ -280,7 +297,7 @@ export function PostCard({
     e.preventDefault();
     e.stopPropagation();
     console.log("[PostCard] 더블탭 이벤트 발생");
-    
+
     // 싱글 클릭 타임아웃 취소
     if (singleClickTimeoutRef.current) {
       console.log("[PostCard] 더블탭으로 인한 싱글 클릭 타임아웃 취소");
@@ -295,21 +312,21 @@ export function PostCard({
       // 더블탭 감지 - 항상 좋아요 토글
       console.log("[PostCard] 더블탭 확인 - 좋아요 토글 실행");
       console.log("[PostCard] 현재 좋아요 상태:", isLiked);
-      
+
       // 좋아요 상태와 관계없이 항상 토글
       const willBeLiked = !isLiked;
       console.log("[PostCard] 토글 후 좋아요 상태:", willBeLiked);
-      
+
       // 좋아요가 활성화되는 경우에만 큰 하트 애니메이션 표시
       if (!isLiked) {
         console.log("[PostCard] 하트 애니메이션 표시");
         setShowDoubleTapHeart(true);
         setTimeout(() => setShowDoubleTapHeart(false), 1000);
       }
-      
+
       // 좋아요 토글 실행 (상태 업데이트를 위해)
       handleLikeClick();
-      
+
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -329,7 +346,7 @@ export function PostCard({
               </span>
             </div>
           </Link>
-          
+
           {/* 사용자명 + 시간 */}
           <div className="flex flex-col">
             <Link
@@ -338,7 +355,10 @@ export function PostCard({
             >
               {user.name}
             </Link>
-            <span className="text-xs text-[var(--text-secondary)]" suppressHydrationWarning>
+            <span
+              className="text-xs text-[var(--text-secondary)]"
+              suppressHydrationWarning
+            >
               {mounted ? timeAgo : "방금 전"}
             </span>
           </div>
@@ -409,7 +429,7 @@ export function PostCard({
           className="w-full h-full object-cover select-none"
           draggable={false}
         />
-        
+
         {/* 더블탭 하트 애니메이션 */}
         {showDoubleTapHeart && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -437,11 +457,7 @@ export function PostCard({
                 isLiked
                   ? "fill-[var(--like)] text-[var(--like)]"
                   : "text-[var(--text-primary)]"
-              } ${
-                isAnimating
-                  ? "scale-[1.3]"
-                  : "scale-100"
-              }`}
+              } ${isAnimating ? "scale-[1.3]" : "scale-100"}`}
             />
           </button>
 
@@ -450,8 +466,11 @@ export function PostCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log("[PostCard] 댓글 버튼 클릭, 현재 showCommentForm:", showCommentForm);
-              
+              console.log(
+                "[PostCard] 댓글 버튼 클릭, 현재 showCommentForm:",
+                showCommentForm,
+              );
+
               // 댓글 폼 토글
               if (!showCommentForm) {
                 console.log("[PostCard] 댓글 폼 표시");
@@ -528,10 +547,10 @@ export function PostCard({
           postId={id}
           onCommentDeleted={(commentId) => {
             console.log("[PostCard] Comment deleted:", commentId);
-            
+
             // 댓글 목록에서 제거
             setComments((prev) => prev.filter((c) => c.id !== commentId));
-            
+
             // 댓글 수 감소
             setCommentsCount((prev) => Math.max(0, prev - 1));
           }}
@@ -546,13 +565,13 @@ export function PostCard({
             postId={id}
             onCommentAdded={(newComment) => {
               console.log("[PostCard] New comment added:", newComment.id);
-              
+
               // 댓글 목록에 추가 (최신순으로 정렬)
               setComments((prev) => [newComment, ...prev].slice(0, 2));
-              
+
               // 댓글 수 증가
               setCommentsCount((prev) => prev + 1);
-              
+
               // 댓글 작성 후 폼 숨기기 (선택사항)
               // setShowCommentForm(false);
             }}
@@ -583,4 +602,3 @@ export function PostCard({
     </article>
   );
 }
-

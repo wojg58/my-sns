@@ -313,6 +313,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClerkSupabaseClient();
 
     // 현재 사용자의 user_id 찾기
+    console.log("Looking up user with clerk_id:", userId);
     const { data: currentUser, error: userError } = await supabase
       .from("users")
       .select("id, clerk_id")
@@ -321,12 +322,36 @@ export async function POST(request: NextRequest) {
 
     if (userError || !currentUser) {
       console.error("User not found:", userError);
+      console.error("User lookup error details:", {
+        message: userError?.message,
+        code: userError?.code,
+        details: userError?.details,
+        hint: userError?.hint,
+      });
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    console.log("User found:", { id: currentUser.id, clerk_id: currentUser.clerk_id });
+
     // Service Role 클라이언트로 Storage 업로드 (RLS 우회)
-    const serviceRoleClient = getServiceRoleClient();
+    let serviceRoleClient;
+    try {
+      serviceRoleClient = getServiceRoleClient();
+      console.log("Service role client created successfully");
+    } catch (clientError) {
+      console.error("Failed to create service role client:", clientError);
+      const errorMessage = clientError instanceof Error ? clientError.message : "Service role client creation failed";
+      return NextResponse.json(
+        { 
+          error: "Failed to initialize storage client",
+          details: errorMessage,
+        },
+        { status: 500 },
+      );
+    }
+    
     const storageBucket = process.env.NEXT_PUBLIC_STORAGE_BUCKET || "uploads";
+    console.log("Storage bucket:", storageBucket);
 
     // 파일명 생성 (타임스탬프 + 랜덤 문자열)
     const fileExt = imageFile.name.split(".").pop() || "jpg";
@@ -335,23 +360,43 @@ export async function POST(request: NextRequest) {
       .substring(7)}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
 
-    console.log("Uploading to storage:", { filePath, bucket: storageBucket });
+    console.log("Uploading to storage:", { filePath, bucket: storageBucket, fileSize: imageFile.size });
 
     // Supabase Storage에 업로드
-    const { data: uploadData, error: uploadError } =
-      await serviceRoleClient.storage
+    let uploadData;
+    let uploadError;
+    try {
+      const uploadResult = await serviceRoleClient.storage
         .from(storageBucket)
         .upload(filePath, imageFile, {
           cacheControl: "3600",
           upsert: false,
         });
-
-    if (uploadError) {
-      console.error("Storage upload error:", uploadError);
+      uploadData = uploadResult.data;
+      uploadError = uploadResult.error;
+    } catch (uploadException) {
+      console.error("Storage upload exception:", uploadException);
+      const errorMessage = uploadException instanceof Error ? uploadException.message : "Upload exception occurred";
       return NextResponse.json(
         {
           error: "Failed to upload image",
-          details: uploadError.message,
+          details: errorMessage,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      console.error("Upload error details:", {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error,
+      });
+      return NextResponse.json(
+        {
+          error: "Failed to upload image",
+          details: uploadError.message || "Unknown upload error",
         },
         { status: 500 },
       );
@@ -363,8 +408,15 @@ export async function POST(request: NextRequest) {
     } = serviceRoleClient.storage.from(storageBucket).getPublicUrl(filePath);
 
     console.log("File uploaded successfully:", publicUrl);
+    console.log("Upload data:", uploadData);
 
     // posts 테이블에 게시물 저장
+    console.log("Inserting post to database:", {
+      user_id: currentUser.id,
+      image_url: publicUrl,
+      caption_length: captionText?.length || 0,
+    });
+
     const { data: post, error: postError } = await supabase
       .from("posts")
       .insert({
@@ -377,6 +429,13 @@ export async function POST(request: NextRequest) {
 
     if (postError) {
       console.error("Post creation error:", postError);
+      console.error("Post error details:", {
+        message: postError.message,
+        code: postError.code,
+        details: postError.details,
+        hint: postError.hint,
+      });
+      
       // 업로드된 파일 삭제 시도 (실패해도 계속 진행)
       await serviceRoleClient.storage
         .from(storageBucket)
@@ -386,11 +445,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Failed to create post",
-          details: postError.message,
+          details: postError.message || "Unknown database error",
         },
         { status: 500 },
       );
     }
+
+    console.log("Post inserted successfully:", post.id);
 
     const createdPost: Post = {
       id: post.id,
@@ -410,8 +471,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[API] POST /api/posts error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("[API] POST /api/posts error details:", {
+      message: errorMessage,
+      stack: errorStack,
+    });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: errorMessage,
+      },
       { status: 500 },
     );
   }

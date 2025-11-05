@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EmojiPickerButton } from "@/components/ui/EmojiPickerButton";
 
 /**
  * @file components/post/EditPostModal.tsx
@@ -126,12 +127,41 @@ export function EditPostModal({
           {/* 캡션 입력 영역 */}
           <div className="p-6">
             <div className="space-y-2">
-              <label
-                htmlFor="edit-caption"
-                className="text-sm font-semibold text-[var(--text-primary)]"
-              >
-                캡션 수정
-              </label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="edit-caption"
+                  className="text-sm font-semibold text-[var(--text-primary)]"
+                >
+                  캡션 수정
+                </label>
+                <EmojiPickerButton
+                  onEmojiClick={(emoji) => {
+                    const textarea = document.getElementById(
+                      "edit-caption",
+                    ) as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const newValue =
+                        caption.substring(0, start) +
+                        emoji +
+                        caption.substring(end);
+                      if (newValue.length <= maxCaptionLength) {
+                        setCaption(newValue);
+                        setError(null);
+                        // 커서 위치 조정
+                        setTimeout(() => {
+                          textarea.focus();
+                          textarea.setSelectionRange(
+                            start + emoji.length,
+                            start + emoji.length,
+                          );
+                        }, 0);
+                      }
+                    }
+                  }}
+                />
+              </div>
               <textarea
                 id="edit-caption"
                 value={caption}

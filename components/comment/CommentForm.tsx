@@ -3,6 +3,7 @@
 import { useState, KeyboardEvent, forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { EmojiPickerButton } from "@/components/ui/EmojiPickerButton";
 import type { CommentWithUser } from "@/lib/types";
 
 /**
@@ -161,6 +162,29 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>(({
         }}
         className="flex items-center gap-2 px-4 py-3"
       >
+        <EmojiPickerButton
+          onEmojiClick={(emoji) => {
+            if (textareaRef.current) {
+              const start = textareaRef.current.selectionStart;
+              const end = textareaRef.current.selectionEnd;
+              const newValue =
+                content.substring(0, start) + emoji + content.substring(end);
+              if (newValue.length <= maxLength) {
+                setContent(newValue);
+                setError(null);
+                // 커서 위치 조정
+                setTimeout(() => {
+                  textareaRef.current?.focus();
+                  textareaRef.current?.setSelectionRange(
+                    start + emoji.length,
+                    start + emoji.length,
+                  );
+                }, 0);
+              }
+            }
+          }}
+          className="flex-shrink-0"
+        />
         <textarea
           ref={textareaRef}
           value={content}

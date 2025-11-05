@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EmojiPickerButton } from "@/components/ui/EmojiPickerButton";
 import { useUser } from "@clerk/nextjs";
 
 /**
@@ -164,8 +165,21 @@ export function CreatePostModal({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "게시물 업로드에 실패했습니다.");
+        // 에러 응답 처리 (JSON이 아닐 수 있음)
+        let errorMessage = "게시물 업로드에 실패했습니다.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (parseError) {
+          // JSON 파싱 실패 시 텍스트로 읽기 시도
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || `서버 오류 (${response.status})`;
+          } catch (textError) {
+            errorMessage = `서버 오류 (${response.status})`;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -291,12 +305,41 @@ export function CreatePostModal({
               {/* 캡션 입력 영역 */}
               <div className="p-4 border-t border-[var(--instagram-border)]">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="caption"
-                    className="text-sm font-semibold text-[var(--text-primary)]"
-                  >
-                    캡션 작성
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="caption"
+                      className="text-sm font-semibold text-[var(--text-primary)]"
+                    >
+                      캡션 작성
+                    </label>
+                    <EmojiPickerButton
+                      onEmojiClick={(emoji) => {
+                        const textarea = document.getElementById(
+                          "caption",
+                        ) as HTMLTextAreaElement;
+                        if (textarea) {
+                          const start = textarea.selectionStart;
+                          const end = textarea.selectionEnd;
+                          const newValue =
+                            caption.substring(0, start) +
+                            emoji +
+                            caption.substring(end);
+                          if (newValue.length <= maxCaptionLength) {
+                            setCaption(newValue);
+                            setError(null);
+                            // 커서 위치 조정
+                            setTimeout(() => {
+                              textarea.focus();
+                              textarea.setSelectionRange(
+                                start + emoji.length,
+                                start + emoji.length,
+                              );
+                            }, 0);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                   <textarea
                     id="caption"
                     value={caption}

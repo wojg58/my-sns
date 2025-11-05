@@ -2,10 +2,28 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import {
+  X,
+  Heart,
+  MessageCircle,
+  Send,
+  Bookmark,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CommentForm, type CommentFormRef } from "@/components/comment/CommentForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  CommentForm,
+  type CommentFormRef,
+} from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
 import { useUser } from "@clerk/nextjs";
 import type { PostWithRelations, CommentWithUser } from "@/lib/types";
@@ -69,7 +87,12 @@ function formatTimeAgo(dateString: string): string {
   return `${diffInYears}년 전`;
 }
 
-export function PostModal({ postId, open, onOpenChange, focusComment = false }: PostModalProps) {
+export function PostModal({
+  postId,
+  open,
+  onOpenChange,
+  focusComment = false,
+}: PostModalProps) {
   const router = useRouter();
   const { user } = useUser();
   const [post, setPost] = useState<PostWithRelations | null>(null);
@@ -84,7 +107,7 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
   const [mounted, setMounted] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [imageHeight, setImageHeight] = useState<number>(566); // 기본 16:9 비율
+  const [imageHeight, setImageHeight] = useState<number>(1080); // 기본 1920x1080 (16:9) 비율
   const imageRef = useRef<HTMLDivElement>(null);
   const imgElementRef = useRef<HTMLImageElement>(null);
   const commentFormRef = useRef<CommentFormRef>(null);
@@ -92,9 +115,15 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
   // 모달이 열릴 때 게시물 데이터 로드
   useEffect(() => {
     if (open && postId) {
+      // 모달이 열리면 즉시 데이터 로드 시작
       fetchPostDetail();
-      // 이미지 높이 초기화 (16:9 비율 기준)
-      setImageHeight(608);
+      // 이미지 높이 초기화 (1920x1080 비율 기준)
+      setImageHeight(1080);
+    } else if (!open) {
+      // 모달이 닫히면 상태 초기화 (다음에 열 때 깨끗한 상태)
+      setPost(null);
+      setLoading(true);
+      setError(null);
     }
   }, [open, postId]);
 
@@ -103,40 +132,45 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
     const img = e.currentTarget;
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
-    
+
     if (naturalWidth > 0 && naturalHeight > 0) {
-      // 이미지 비율 계산
-      // 모달 너비 1200px, 이미지 영역 60% = 720px
-      // 실제로는 이미지가 컨테이너 내에서 object-contain으로 표시되므로
-      // 컨테이너 높이를 이미지 비율에 맞춰 계산
-      const aspectRatio = naturalHeight / naturalWidth;
-      const imageContainerWidth = 720; // 모달 너비 1200px의 60%
-      const calculatedHeight = imageContainerWidth * aspectRatio;
-      
-      // 인스타그램 데스크탑 사이즈에 맞춰 높이 조정
-      // 데스크탑 모달은 가로형 레이아웃이므로 높이를 제한
-      // 16:9 비율 (1080px × 608px) - 가로형 이미지
-      // 4:5 비율 (1080px × 1350px) - 세로형 이미지 (하지만 모달 높이 제한)
-      // 1:1 비율 (1080px × 1080px) - 정사각형 (모달 높이 제한)
-      // 최소 높이: 608px (16:9 비율), 최대 높이: 90vh와 800px 중 작은 값
-      // 세로형 이미지도 모달이 너무 길어지지 않도록 800px로 제한
-      const maxHeight = typeof window !== "undefined" 
-        ? Math.min(window.innerHeight * 0.9, 800) 
-        : 800;
-      const minHeight = 608;
-      
+      // 이미지 컨테이너 너비: 800px (댓글 영역이 잘리지 않도록 조정)
+      const imageContainerWidth = 800;
+
+      // 이미지의 원본 비율 계산
+      const imageAspectRatio = naturalHeight / naturalWidth;
+
+      // 800px 너비에 맞춰 높이 계산
+      let calculatedHeight = imageContainerWidth * imageAspectRatio;
+
+      // 화면 크기에 맞게 조정 (최대 높이 제한)
+      // 이미지가 화면을 넘지 않도록 제한
+      const viewportMaxHeight =
+        typeof window !== "undefined" ? window.innerHeight * 0.9 : 1000;
+
+      // 최대 높이: 계산된 높이와 화면 높이 중 작은 값
+      // 이미지 비율에 맞게 정확히 계산
+      const maxHeight = Math.min(calculatedHeight, viewportMaxHeight);
+
+      // 최소 높이는 400px
+      const minHeight = 400;
+
       // 계산된 높이를 최소/최대 범위 내로 제한
-      const finalHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
-      
+      // 이미지 비율에 맞게 정확히 높이 설정
+      const finalHeight = Math.max(
+        minHeight,
+        Math.min(calculatedHeight, maxHeight),
+      );
+
       console.log("[PostModal] Image aspect ratio calculation:", {
         naturalWidth,
         naturalHeight,
-        aspectRatio: (naturalHeight / naturalWidth).toFixed(2),
+        imageAspectRatio: imageAspectRatio.toFixed(2),
         calculatedHeight: Math.round(calculatedHeight),
         finalHeight: Math.round(finalHeight),
         maxHeight: Math.round(maxHeight),
       });
-      
+
       setImageHeight(finalHeight);
     }
   };
@@ -171,7 +205,11 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
   const fetchPostDetail = async () => {
     try {
       console.group("[PostModal] Fetching post detail");
-      setLoading(true);
+      // 로딩 상태를 즉시 true로 설정하지 않고, 모달이 열린 직후에는 기존 데이터가 있다면 표시
+      // 단, 모달이 처음 열릴 때만 로딩 표시
+      if (!post) {
+        setLoading(true);
+      }
       setError(null);
 
       const response = await fetch(`/api/posts/${postId}`);
@@ -198,19 +236,25 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
       setLikesCount(data.stats.likesCount);
       setCommentsCount(data.stats.commentsCount);
       setComments(data.recentComments || []);
-      
+
       console.log("[PostModal] Post state updated:", {
         post: !!data,
         comments: (data.recentComments || []).length,
       });
     } catch (err) {
       console.error("[PostModal] Fetch error:", err);
-      
+
       // 네트워크 에러에 대한 더 명확한 메시지
       if (err instanceof TypeError && err.message === "Failed to fetch") {
-        setError("서버에 연결할 수 없습니다. 개발 서버가 실행 중인지 확인해주세요.");
+        setError(
+          "서버에 연결할 수 없습니다. 개발 서버가 실행 중인지 확인해주세요.",
+        );
       } else {
-        setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "게시물을 불러오는데 실패했습니다.",
+        );
       }
     } finally {
       setLoading(false);
@@ -353,7 +397,9 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <p className="text-red-600 font-semibold mb-2">오류 발생</p>
-              <p className="text-sm text-[var(--text-secondary)]">{error || "게시물을 찾을 수 없습니다."}</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                {error || "게시물을 찾을 수 없습니다."}
+              </p>
             </div>
           </div>
         </DialogContent>
@@ -365,12 +411,12 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-[1200px] w-[1200px] p-0 flex overflow-hidden bg-white border-[var(--instagram-border)]"
-        style={{ 
+      <DialogContent
+        className="max-w-[1200px] sm:max-w-[1200px] w-auto p-0 flex overflow-hidden bg-white border-[var(--instagram-border)]"
+        style={{
           height: `${imageHeight}px`,
-          maxHeight: '90vh',
-          minHeight: '608px',
+          maxHeight: "90vh",
+          minHeight: "400px",
         }}
       >
         {/* 접근성을 위한 숨겨진 제목 및 설명 */}
@@ -378,17 +424,16 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
         <DialogDescription className="sr-only">
           게시물 이미지와 댓글을 확인할 수 있습니다.
         </DialogDescription>
-        {/* 좌측: 이미지 영역 (60% 너비, 이미지 비율에 맞는 높이) */}
-        {/* 이미지가 잘리지 않도록 object-contain 사용 */}
-        <div 
-          className="w-[60%] bg-black relative overflow-hidden flex-shrink-0 flex items-center justify-center"
+        {/* 좌측: 이미지 영역 (800px 고정 너비, 이미지 비율에 맞는 높이) */}
+        <div
+          className="w-[800px] bg-white relative overflow-hidden flex-shrink-0 flex items-center justify-center"
           style={{ height: `${imageHeight}px` }}
         >
           <img
             ref={imgElementRef}
             src={post.imageUrl}
             alt={post.caption || "게시물 이미지"}
-            className="max-w-full max-h-full w-auto h-auto object-contain"
+            className="w-full h-full object-contain"
             onLoad={handleImageLoad}
             onError={(e) => {
               console.error("[PostModal] Image load error:", post.imageUrl);
@@ -396,9 +441,9 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
           />
         </div>
 
-        {/* 우측: 댓글 영역 (40% 너비, 이미지와 동일한 높이) */}
-        <div 
-          className="w-[40%] flex flex-col bg-white overflow-hidden flex-shrink-0"
+        {/* 우측: 댓글 영역 (376px 고정 너비, 이미지와 동일한 높이) */}
+        <div
+          className="w-[376px] flex flex-col bg-white overflow-hidden flex-shrink-0"
           style={{ height: `${imageHeight}px` }}
         >
           {/* 헤더 */}
@@ -469,7 +514,9 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
                 <span className="font-semibold text-[var(--text-primary)] mr-1">
                   {post.user.name}
                 </span>
-                <span className="text-[var(--text-primary)]">{post.caption}</span>
+                <span className="text-[var(--text-primary)]">
+                  {post.caption}
+                </span>
               </div>
             )}
 
@@ -532,7 +579,10 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
 
             {/* 시간 */}
             <div className="px-4 pb-2">
-              <span className="text-xs text-[var(--text-secondary)]" suppressHydrationWarning>
+              <span
+                className="text-xs text-[var(--text-secondary)]"
+                suppressHydrationWarning
+              >
                 {mounted ? timeAgo : "방금 전"}
               </span>
             </div>
@@ -550,4 +600,3 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
     </Dialog>
   );
 }
-
