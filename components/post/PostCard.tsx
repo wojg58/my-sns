@@ -138,14 +138,23 @@ export function PostCard({
         // 이미 좋아요한 경우 (409)는 상태를 되돌리지 않음
         if (response.status === 409 && error.alreadyLiked) {
           console.log("Already liked, keeping optimistic update");
+          console.groupEnd();
+          return; // 성공으로 처리하고 함수 종료
         } else {
           // 다른 에러는 상태 되돌리기
           throw new Error(error.error || "Failed to toggle like");
         }
       }
 
-      const data = await response.json();
-      console.log("Like toggle success:", data);
+      // response.ok가 true일 때만 데이터 읽기
+      // DELETE의 경우 빈 응답일 수 있으므로 처리
+      try {
+        const data = await response.json();
+        console.log("Like toggle success:", data);
+      } catch (e) {
+        // JSON 파싱 실패 시 (빈 응답 등) 무시
+        console.log("Like toggle success (no response body)");
+      }
       console.groupEnd();
     } catch (error) {
       console.error("[PostCard] Like toggle error:", error);
