@@ -27,26 +27,10 @@ export default async function ProfilePage() {
   }
 
   console.log("현재 사용자 Clerk ID:", clerkUserId);
-
-  // Supabase에서 현재 사용자의 userId 찾기
-  const supabase = createClerkSupabaseClient();
-  const { data: currentUser, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("clerk_id", clerkUserId)
-    .single();
-
-  if (error || !currentUser) {
-    console.error("사용자 정보를 찾을 수 없습니다:", error);
-    console.groupEnd();
-    redirect("/");
-  }
-
-  console.log("현재 사용자 ID:", currentUser.id);
-  console.log(`/profile/${currentUser.id}로 리다이렉트`);
+  console.log(`/profile/${clerkUserId}로 리다이렉트`);
   console.groupEnd();
 
-  // 사용자 프로필 페이지로 리다이렉트
-  redirect(`/profile/${currentUser.id}`);
+  // 사용자 프로필 페이지로 리다이렉트 (Clerk ID 사용)
+  redirect(`/profile/${clerkUserId}`);
 }
 

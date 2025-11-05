@@ -31,19 +31,17 @@ export async function GET(
   try {
     console.group("[API] GET /api/users/[userId]");
 
-    // 파라미터 파싱
+    // 파라미터 파싱 (Clerk ID로만 조회)
     const { userId } = await params;
-    const searchParams = request.nextUrl.searchParams;
-    const clerkId = searchParams.get("clerkId"); // clerkId로도 조회 가능하도록
 
-    if (!userId && !clerkId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "userId or clerkId is required" },
+        { error: "userId (clerkId) is required" },
         { status: 400 },
       );
     }
 
-    console.log("User request:", { userId, clerkId });
+    console.log("User request (Clerk ID):", userId);
 
     // Supabase 클라이언트 생성
     const supabase = createClerkSupabaseClient();
@@ -65,17 +63,12 @@ export async function GET(
       }
     }
 
-    // 사용자 조회 (userId 또는 clerkId로)
-    let userQuery = supabase
+    // 사용자 조회 (Clerk ID로만 조회)
+    const userQuery = supabase
       .from("users")
       .select("id, clerk_id, name, created_at")
+      .eq("clerk_id", userId)
       .limit(1);
-
-    if (clerkId) {
-      userQuery = userQuery.eq("clerk_id", clerkId);
-    } else {
-      userQuery = userQuery.eq("id", userId);
-    }
 
     const { data: user, error: userError } = await userQuery.single();
 

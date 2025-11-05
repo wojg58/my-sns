@@ -320,6 +320,10 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-full h-[90vh] p-0 flex">
+          <DialogTitle className="sr-only">게시물 로딩 중</DialogTitle>
+          <DialogDescription className="sr-only">
+            게시물 정보를 불러오는 중입니다.
+          </DialogDescription>
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--instagram-blue)] mx-auto mb-4"></div>
@@ -336,6 +340,10 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-full h-[90vh] p-0 flex">
+          <DialogTitle className="sr-only">오류 발생</DialogTitle>
+          <DialogDescription className="sr-only">
+            게시물을 불러오는 중 오류가 발생했습니다.
+          </DialogDescription>
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <p className="text-red-600 font-semibold mb-2">오류 발생</p>

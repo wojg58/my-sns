@@ -53,20 +53,12 @@ async function fetchUserProfile(userId: string): Promise<UserResponse> {
       }
     }
 
-    // 사용자 조회 (userId가 UUID 형식이면 id로, 아니면 clerk_id로 조회)
-    // UUID 형식 체크: 8-4-4-4-12 형식
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-    
-    let userQuery = supabase
+    // 사용자 조회 (Clerk ID로만 조회)
+    const userQuery = supabase
       .from("users")
       .select("id, clerk_id, name, created_at")
+      .eq("clerk_id", userId)
       .limit(1);
-    
-    if (isUUID) {
-      userQuery = userQuery.eq("id", userId);
-    } else {
-      userQuery = userQuery.eq("clerk_id", userId);
-    }
     
     const { data: user, error: userError } = await userQuery.single();
 
@@ -161,7 +153,7 @@ export default async function UserProfilePage({
         </div>
 
         {/* 게시물 그리드 */}
-        <PostGrid userId={profileData.user.id} />
+        <PostGrid userId={profileData.user.clerkId} />
       </div>
     </div>
   );

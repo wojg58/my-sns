@@ -67,8 +67,29 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false });
 
     // 특정 사용자 게시물 필터링 (filterUserId가 제공된 경우)
+    // filterUserId는 Clerk ID이므로 Supabase user_id로 변환 필요
     if (filterUserId) {
-      postsQuery = postsQuery.eq("user_id", filterUserId);
+      // Clerk ID로 user_id 찾기
+      const { data: targetUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clerk_id", filterUserId)
+        .single();
+
+      if (targetUser) {
+        postsQuery = postsQuery.eq("user_id", targetUser.id);
+      } else {
+        // 사용자를 찾을 수 없으면 빈 결과 반환
+        return NextResponse.json({
+          posts: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            hasMore: false,
+          },
+        });
+      }
     }
 
     const { data: posts, error: postsError } = await postsQuery.range(
