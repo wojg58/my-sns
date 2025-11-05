@@ -111,7 +111,7 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
       // 컨테이너 높이를 이미지 비율에 맞춰 계산
       const aspectRatio = naturalHeight / naturalWidth;
       const imageContainerWidth = 720; // 모달 너비 1200px의 60%
-      let calculatedHeight = imageContainerWidth * aspectRatio;
+      const calculatedHeight = imageContainerWidth * aspectRatio;
       
       // 인스타그램 데스크탑 사이즈에 맞춰 높이 조정
       // 데스크탑 모달은 가로형 레이아웃이므로 높이를 제한
@@ -205,7 +205,13 @@ export function PostModal({ postId, open, onOpenChange, focusComment = false }: 
       });
     } catch (err) {
       console.error("[PostModal] Fetch error:", err);
-      setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
+      
+      // 네트워크 에러에 대한 더 명확한 메시지
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        setError("서버에 연결할 수 없습니다. 개발 서버가 실행 중인지 확인해주세요.");
+      } else {
+        setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
+      }
     } finally {
       setLoading(false);
     }

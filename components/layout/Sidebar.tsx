@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { Home, Search, SquarePlus, User, Menu } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton, SignOutButton } from "@clerk/nextjs";
+import { Home, Search, SquarePlus, User, Menu, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreatePostModal } from "@/components/post/CreatePostModal";
 import { SearchModal } from "@/components/search/SearchModal";
@@ -60,46 +60,82 @@ export function Sidebar() {
           </div>
 
           {/* Menu Items */}
-          <nav className="flex-1 px-3 py-4">
-            <SignedIn>
-              <ul className="space-y-1">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  const isCreateButton = item.href === "/create";
-                  const isSearchButton = item.href === "/search";
+          <nav className="flex-1 px-3 py-4 flex flex-col">
+            {/* 상단 메뉴 아이템들 */}
+            <div className="flex-1">
+              <SignedIn>
+                <ul className="space-y-1">
+                  {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    const isCreateButton = item.href === "/create";
+                    const isSearchButton = item.href === "/search";
 
-                  // "만들기" 버튼은 모달 열기
-                  if (isCreateButton) {
+                    // "만들기" 버튼은 모달 열기
+                    if (isCreateButton) {
+                      return (
+                        <li key={item.href}>
+                          <button
+                            type="button"
+                            onClick={() => setIsCreatePostModalOpen(true)}
+                            className={cn(
+                              "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                              "hover:bg-gray-50",
+                            )}
+                          >
+                            <Icon className="w-6 h-6 text-[var(--text-primary)]" />
+                            <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
+                              {item.label}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    }
+
+                    // "검색" 버튼은 모달 열기
+                    if (isSearchButton) {
+                      return (
+                        <li key={item.href}>
+                          <button
+                            type="button"
+                            onClick={() => setIsSearchModalOpen(true)}
+                            className={cn(
+                              "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                              "hover:bg-gray-50",
+                            )}
+                          >
+                            <Icon
+                              className={cn(
+                                "w-6 h-6",
+                                isActive
+                                  ? "text-[var(--text-primary)]"
+                                  : "text-[var(--text-primary)]",
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "text-lg hidden lg:inline",
+                                isActive
+                                  ? "text-[var(--text-primary)] font-semibold"
+                                  : "text-[var(--text-primary)]",
+                              )}
+                            >
+                              {item.label}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    }
+
+                    // 일반 메뉴 아이템
                     return (
                       <li key={item.href}>
-                        <button
-                          type="button"
-                          onClick={() => setIsCreatePostModalOpen(true)}
+                        <Link
+                          href={item.href}
                           className={cn(
-                            "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                            "flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
                             "hover:bg-gray-50",
-                          )}
-                        >
-                          <Icon className="w-6 h-6 text-[var(--text-primary)]" />
-                          <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
-                            {item.label}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  }
-
-                  // "검색" 버튼은 모달 열기
-                  if (isSearchButton) {
-                    return (
-                      <li key={item.href}>
-                        <button
-                          type="button"
-                          onClick={() => setIsSearchModalOpen(true)}
-                          className={cn(
-                            "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
-                            "hover:bg-gray-50",
+                            isActive && "font-semibold",
                           )}
                         >
                           <Icon
@@ -120,59 +156,51 @@ export function Sidebar() {
                           >
                             {item.label}
                           </span>
-                        </button>
+                        </Link>
                       </li>
                     );
-                  }
+                  })}
+                </ul>
+              </SignedIn>
 
-                  // 일반 메뉴 아이템
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
-                          "hover:bg-gray-50",
-                          isActive && "font-semibold",
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            "w-6 h-6",
-                            isActive
-                              ? "text-[var(--text-primary)]"
-                              : "text-[var(--text-primary)]",
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "text-lg hidden lg:inline",
-                            isActive
-                              ? "text-[var(--text-primary)] font-semibold"
-                              : "text-[var(--text-primary)]",
-                          )}
-                        >
-                          {item.label}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </SignedIn>
+              <SignedOut>
+                <div className="px-3 py-2">
+                  <SignInButton mode="modal">
+                    <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50">
+                      <Menu className="w-6 h-6 text-[var(--text-primary)]" />
+                      <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
+                        로그인
+                      </span>
+                    </button>
+                  </SignInButton>
+                </div>
+              </SignedOut>
+            </div>
 
-            <SignedOut>
-              <div className="px-3 py-2">
+            {/* 하단 로그인/로그아웃 버튼 */}
+            <div className="px-3 py-2 border-t border-[var(--instagram-border)] mt-auto">
+              <SignedIn>
+                <SignOutButton>
+                  <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <LogOut className="w-6 h-6 text-[var(--text-primary)]" />
+                    <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
+                      로그아웃
+                    </span>
+                  </button>
+                </SignOutButton>
+              </SignedIn>
+
+              <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50">
+                  <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
                     <Menu className="w-6 h-6 text-[var(--text-primary)]" />
                     <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
                       로그인
                     </span>
                   </button>
                 </SignInButton>
-              </div>
-            </SignedOut>
+              </SignedOut>
+            </div>
           </nav>
         </div>
       </aside>
