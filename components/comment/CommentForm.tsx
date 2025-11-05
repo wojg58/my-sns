@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import type { CommentWithUser } from "@/lib/types";
@@ -13,6 +13,7 @@ import type { CommentWithUser } from "@/lib/types";
  * - "댓글 달기..." 입력창
  * - Enter 키 또는 "게시" 버튼으로 댓글 작성
  * - 최대 2,200자 제한
+ * - 외부에서 포커스를 제어할 수 있도록 ref 노출
  *
  * @dependencies
  * - @clerk/nextjs: 사용자 인증
@@ -24,18 +25,42 @@ interface CommentFormProps {
   onCommentAdded?: (comment: CommentWithUser) => void; // 댓글 작성 성공 콜백
   placeholder?: string;
   className?: string;
+  autoFocus?: boolean; // 자동 포커스 여부
 }
 
-export function CommentForm({
+export interface CommentFormRef {
+  focus: () => void;
+}
+
+export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>(({
   postId,
   onCommentAdded,
   placeholder = "댓글 달기...",
   className = "",
-}: CommentFormProps) {
+  autoFocus = false,
+}, ref) => {
   const { user, isLoaded } = useUser();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 외부에서 포커스를 제어할 수 있도록 ref 노출
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus();
+    },
+  }));
+
+  // autoFocus prop이 true일 때 자동 포커스
+  useEffect(() => {
+    if (autoFocus && isLoaded && user && textareaRef.current) {
+      // 약간의 지연을 두어 DOM이 완전히 렌더링된 후 포커스
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  }, [autoFocus, isLoaded, user]);
 
   // 댓글 작성
   const handleSubmit = async () => {
@@ -137,6 +162,7 @@ export function CommentForm({
         className="flex items-center gap-2 px-4 py-3"
       >
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={(e) => {
             if (e.target.value.length <= maxLength) {
@@ -179,4 +205,6 @@ export function CommentForm({
       )}
     </div>
   );
-}
+});
+
+CommentForm.displayName = "CommentForm";

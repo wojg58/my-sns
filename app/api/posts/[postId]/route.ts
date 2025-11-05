@@ -13,6 +13,10 @@ import type { PostWithRelations, CommentWithUser } from "@/lib/types";
  * - 전체 댓글 목록 포함
  * - 현재 사용자의 좋아요 여부 확인
  *
+ * PUT /api/posts/[postId]
+ * - 게시물 수정 (본인만)
+ * - 캡션 수정 가능
+ *
  * DELETE /api/posts/[postId]
  * - 게시물 삭제 (본인만)
  * - Supabase Storage에서 이미지 파일 삭제
@@ -182,6 +186,122 @@ export async function GET(
     return NextResponse.json(postWithRelations);
   } catch (error) {
     console.error("[API] GET /api/posts/[postId] error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * 게시물 수정
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ postId: string }> },
+) {
+  try {
+    console.group("[API] PUT /api/posts/[postId]");
+
+    // 인증 확인
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { postId } = await params;
+    console.log("Update post request:", { postId, clerkUserId });
+
+    // 요청 본문 파싱
+    const body = await request.json();
+    const { caption } = body;
+
+    // 캡션 검증
+    if (caption !== undefined && caption !== null) {
+      const captionText = typeof caption === "string" ? caption.trim() : "";
+      if (captionText.length > 2200) {
+        return NextResponse.json(
+          { error: "Caption must be less than 2200 characters" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClerkSupabaseClient();
+
+    // 현재 사용자의 user_id 찾기
+    const { data: currentUser, error: userError } = await supabase
+      .from("users")
+      .select("id, clerk_id")
+      .eq("clerk_id", clerkUserId)
+      .single();
+
+    if (userError || !currentUser) {
+      console.error("User not found:", userError);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // 게시물 조회 및 권한 확인
+    const { data: post, error: postError } = await supabase
+      .from("posts")
+      .select("id, user_id, caption")
+      .eq("id", postId)
+      .single();
+
+    if (postError || !post) {
+      console.error("Post not found:", postError);
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // 권한 확인: 본인 게시물만 수정 가능
+    if (post.user_id !== currentUser.id) {
+      console.error("Unauthorized: Not the post owner");
+      return NextResponse.json(
+        { error: "Unauthorized: Only the post owner can edit" },
+        { status: 403 },
+      );
+    }
+
+    // 업데이트할 데이터 준비
+    const updateData: { caption?: string | null; updated_at?: string } = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (caption !== undefined) {
+      updateData.caption = caption === "" ? null : caption.trim();
+    }
+
+    // 게시물 업데이트
+    const { data: updatedPost, error: updateError } = await supabase
+      .from("posts")
+      .update(updateData)
+      .eq("id", postId)
+      .eq("user_id", currentUser.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Post update error:", updateError);
+      return NextResponse.json(
+        {
+          error: "Failed to update post",
+          details: updateError.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    console.log("Post updated successfully:", postId);
+    console.log("Updated caption:", updateData.caption);
+    console.groupEnd();
+
+    return NextResponse.json({
+      success: true,
+      post: updatedPost,
+    });
+  } catch (error) {
+    console.error("[API] PUT /api/posts/[postId] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

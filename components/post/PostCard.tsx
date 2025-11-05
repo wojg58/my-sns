@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { CommentForm } from "@/components/comment/CommentForm";
+import { CommentForm, type CommentFormRef } from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
 import { PostModal } from "@/components/post/PostModal";
+import { EditPostModal } from "@/components/post/EditPostModal";
 import type { PostWithRelations, CommentWithUser } from "@/lib/types";
 
 /**
@@ -107,8 +108,13 @@ export function PostCard({
   const [openMenu, setOpenMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentCaption, setCurrentCaption] = useState(caption || "");
   const lastTapRef = useRef<number>(0);
   const imageRef = useRef<HTMLDivElement>(null);
+  const commentFormInputRef = useRef<CommentFormRef>(null);
+  const singleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isOwnPost = clerkUser?.id === user.clerkId;
 
@@ -117,6 +123,20 @@ export function PostCard({
     setMounted(true);
     setTimeAgo(formatTimeAgo(createdAt));
   }, [createdAt]);
+
+  // caption prop이 변경되면 currentCaption 업데이트
+  useEffect(() => {
+    setCurrentCaption(caption || "");
+  }, [caption]);
+
+  // 컴포넌트 언마운트 시 타임아웃 정리
+  useEffect(() => {
+    return () => {
+      if (singleClickTimeoutRef.current) {
+        clearTimeout(singleClickTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 캡션 줄 수 계산 (대략적으로)
   const shouldTruncate = caption && caption.length > 100 && !showFullCaption;
@@ -155,13 +175,48 @@ export function PostCard({
   };
 
   // 이미지 클릭 시 모달 열기 (Desktop) 또는 페이지 이동 (Mobile)
+  // 더블탭 감지를 위해 지연 실행
   const handleImageClick = () => {
-    // Desktop (1024px+)에서는 모달, Mobile에서는 페이지 이동
-    if (window.innerWidth >= 1024) {
-      setIsModalOpen(true);
-    } else {
-      router.push(`/post/${id}`);
+    console.log("[PostCard] 이미지 클릭, 기존 타임아웃:", singleClickTimeoutRef.current);
+    
+    // 기존 타임아웃이 있으면 취소하고 더블탭 처리
+    if (singleClickTimeoutRef.current) {
+      console.log("[PostCard] 기존 타임아웃 취소 (더블탭 감지)");
+      clearTimeout(singleClickTimeoutRef.current);
+      singleClickTimeoutRef.current = null;
+      
+      // 더블탭 처리 (좋아요 토글)
+      console.log("[PostCard] 더블탭으로 좋아요 토글 실행");
+      console.log("[PostCard] 현재 좋아요 상태:", isLiked);
+      
+      // 좋아요 토글 실행
+      handleLikeClick();
+      
+      // 좋아요가 활성화되는 경우에만 큰 하트 애니메이션 표시
+      if (!isLiked) {
+        console.log("[PostCard] 하트 애니메이션 표시");
+        setShowDoubleTapHeart(true);
+        setTimeout(() => setShowDoubleTapHeart(false), 1000);
+      }
+      
+      return; // 더블탭이므로 싱글 클릭 취소
     }
+
+    console.log("[PostCard] 싱글 클릭 타임아웃 설정");
+    // 싱글 클릭은 약간 지연 후 실행 (더블탭 감지 시간 동안 대기)
+    singleClickTimeoutRef.current = setTimeout(() => {
+      console.log("[PostCard] 싱글 클릭 실행");
+      singleClickTimeoutRef.current = null;
+      // Desktop (1024px+)에서는 모달, Mobile에서는 페이지 이동
+      // 클라이언트에서만 window 체크
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        console.log("[PostCard] Desktop - 모달 열기");
+        setIsModalOpen(true);
+      } else {
+        console.log("[PostCard] Mobile - 페이지 이동");
+        router.push(`/post/${id}`);
+      }
+    }, 300); // 더블탭 감지 시간과 동일
   };
 
   // 좋아요 토글
@@ -221,18 +276,40 @@ export function PostCard({
   };
 
   // 더블탭 좋아요 처리
-  const handleImageDoubleTap = () => {
+  const handleImageDoubleTap = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[PostCard] 더블탭 이벤트 발생");
+    
+    // 싱글 클릭 타임아웃 취소
+    if (singleClickTimeoutRef.current) {
+      console.log("[PostCard] 더블탭으로 인한 싱글 클릭 타임아웃 취소");
+      clearTimeout(singleClickTimeoutRef.current);
+      singleClickTimeoutRef.current = null;
+    }
+
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
 
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // 더블탭 감지
+      // 더블탭 감지 - 항상 좋아요 토글
+      console.log("[PostCard] 더블탭 확인 - 좋아요 토글 실행");
+      console.log("[PostCard] 현재 좋아요 상태:", isLiked);
+      
+      // 좋아요 상태와 관계없이 항상 토글
+      const willBeLiked = !isLiked;
+      console.log("[PostCard] 토글 후 좋아요 상태:", willBeLiked);
+      
+      // 좋아요가 활성화되는 경우에만 큰 하트 애니메이션 표시
       if (!isLiked) {
-        handleLikeClick();
-        // 큰 하트 애니메이션
+        console.log("[PostCard] 하트 애니메이션 표시");
         setShowDoubleTapHeart(true);
         setTimeout(() => setShowDoubleTapHeart(false), 1000);
       }
+      
+      // 좋아요 토글 실행 (상태 업데이트를 위해)
+      handleLikeClick();
+      
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -276,7 +353,7 @@ export function PostCard({
             <MoreHorizontal className="w-5 h-5 text-[var(--text-primary)]" />
           </button>
 
-          {/* 삭제 메뉴 (본인 게시물만) */}
+          {/* 메뉴 (본인 게시물만) */}
           {openMenu && isOwnPost && (
             <>
               <div
@@ -286,9 +363,20 @@ export function PostCard({
               <div className="absolute right-0 top-10 bg-white border border-[var(--instagram-border)] rounded-lg shadow-lg z-20 min-w-[120px]">
                 <button
                   type="button"
+                  onClick={() => {
+                    setOpenMenu(false);
+                    setIsEditModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>수정</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleDeletePost}
                   disabled={isDeleting}
-                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-t border-[var(--instagram-border)]"
                 >
                   {isDeleting ? (
                     <>
@@ -359,11 +447,23 @@ export function PostCard({
 
           {/* 댓글 버튼 */}
           <button
-            onClick={() => {
-              if (window.innerWidth >= 1024) {
-                setIsModalOpen(true);
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("[PostCard] 댓글 버튼 클릭, 현재 showCommentForm:", showCommentForm);
+              
+              // 댓글 폼 토글
+              if (!showCommentForm) {
+                console.log("[PostCard] 댓글 폼 표시");
+                setShowCommentForm(true);
+                // 댓글 입력창에 포커스
+                setTimeout(() => {
+                  commentFormInputRef.current?.focus();
+                }, 100);
               } else {
-                router.push(`/post/${id}`);
+                console.log("[PostCard] 댓글 폼 닫기");
+                // 댓글 폼이 이미 보이면 닫기
+                setShowCommentForm(false);
               }
             }}
             className="p-2 hover:opacity-70 transition-opacity"
@@ -438,17 +538,46 @@ export function PostCard({
         />
       </div>
 
-      {/* 댓글 작성 폼 */}
-      <CommentForm
+      {/* 댓글 작성 폼 (댓글 아이콘 클릭 시에만 표시) */}
+      {showCommentForm && (
+        <div className="border-t border-[var(--instagram-border)]">
+          <CommentForm
+            ref={commentFormInputRef}
+            postId={id}
+            onCommentAdded={(newComment) => {
+              console.log("[PostCard] New comment added:", newComment.id);
+              
+              // 댓글 목록에 추가 (최신순으로 정렬)
+              setComments((prev) => [newComment, ...prev].slice(0, 2));
+              
+              // 댓글 수 증가
+              setCommentsCount((prev) => prev + 1);
+              
+              // 댓글 작성 후 폼 숨기기 (선택사항)
+              // setShowCommentForm(false);
+            }}
+          />
+        </div>
+      )}
+
+      {/* 게시물 상세 모달 (Desktop) */}
+      <PostModal
         postId={id}
-        onCommentAdded={(newComment) => {
-          console.log("[PostCard] New comment added:", newComment.id);
-          
-          // 댓글 목록에 추가 (최신순으로 정렬)
-          setComments((prev) => [newComment, ...prev].slice(0, 2));
-          
-          // 댓글 수 증가
-          setCommentsCount((prev) => prev + 1);
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        focusComment={true}
+      />
+
+      {/* 게시물 수정 모달 */}
+      <EditPostModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        postId={id}
+        initialCaption={currentCaption}
+        onSuccess={() => {
+          // 수정 성공 후 피드 새로고침 (페이지 리로드)
+          console.log("[PostCard] Post updated, refreshing page...");
+          window.location.reload();
         }}
       />
     </article>

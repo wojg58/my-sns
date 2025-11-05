@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CommentForm } from "@/components/comment/CommentForm";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CommentForm, type CommentFormRef } from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
 import { useUser } from "@clerk/nextjs";
 import type { PostWithRelations, CommentWithUser } from "@/lib/types";
@@ -30,6 +30,7 @@ interface PostModalProps {
   postId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  focusComment?: boolean; // 댓글 입력창에 자동 포커스할지 여부
 }
 
 /**
@@ -68,7 +69,7 @@ function formatTimeAgo(dateString: string): string {
   return `${diffInYears}년 전`;
 }
 
-export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
+export function PostModal({ postId, open, onOpenChange, focusComment = false }: PostModalProps) {
   const router = useRouter();
   const { user } = useUser();
   const [post, setPost] = useState<PostWithRelations | null>(null);
@@ -83,14 +84,72 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
   const [mounted, setMounted] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageHeight, setImageHeight] = useState<number>(566); // 기본 16:9 비율
   const imageRef = useRef<HTMLDivElement>(null);
+  const imgElementRef = useRef<HTMLImageElement>(null);
+  const commentFormRef = useRef<CommentFormRef>(null);
 
   // 모달이 열릴 때 게시물 데이터 로드
   useEffect(() => {
     if (open && postId) {
       fetchPostDetail();
+      // 이미지 높이 초기화 (16:9 비율 기준)
+      setImageHeight(608);
     }
   }, [open, postId]);
+
+  // 이미지 로드 후 비율에 맞게 높이 조정
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+    
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      // 이미지 비율 계산
+      // 모달 너비 1200px, 이미지 영역 60% = 720px
+      // 실제로는 이미지가 컨테이너 내에서 object-contain으로 표시되므로
+      // 컨테이너 높이를 이미지 비율에 맞춰 계산
+      const aspectRatio = naturalHeight / naturalWidth;
+      const imageContainerWidth = 720; // 모달 너비 1200px의 60%
+      let calculatedHeight = imageContainerWidth * aspectRatio;
+      
+      // 인스타그램 데스크탑 사이즈에 맞춰 높이 조정
+      // 데스크탑 모달은 가로형 레이아웃이므로 높이를 제한
+      // 16:9 비율 (1080px × 608px) - 가로형 이미지
+      // 4:5 비율 (1080px × 1350px) - 세로형 이미지 (하지만 모달 높이 제한)
+      // 1:1 비율 (1080px × 1080px) - 정사각형 (모달 높이 제한)
+      // 최소 높이: 608px (16:9 비율), 최대 높이: 90vh와 800px 중 작은 값
+      // 세로형 이미지도 모달이 너무 길어지지 않도록 800px로 제한
+      const maxHeight = typeof window !== "undefined" 
+        ? Math.min(window.innerHeight * 0.9, 800) 
+        : 800;
+      const minHeight = 608;
+      
+      // 계산된 높이를 최소/최대 범위 내로 제한
+      const finalHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
+      
+      console.log("[PostModal] Image aspect ratio calculation:", {
+        naturalWidth,
+        naturalHeight,
+        aspectRatio: (naturalHeight / naturalWidth).toFixed(2),
+        calculatedHeight: Math.round(calculatedHeight),
+        finalHeight: Math.round(finalHeight),
+        maxHeight: Math.round(maxHeight),
+      });
+      
+      setImageHeight(finalHeight);
+    }
+  };
+
+  // 모달이 열리고 데이터가 로드되면 댓글 입력창에 포커스
+  useEffect(() => {
+    if (open && !loading && post && focusComment) {
+      // 모달이 완전히 열린 후 포커스
+      setTimeout(() => {
+        commentFormRef.current?.focus();
+      }, 300);
+    }
+  }, [open, loading, post, focusComment]);
 
   // 클라이언트 마운트 확인
   useEffect(() => {
@@ -125,7 +184,13 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
       }
 
       const data: PostWithRelations = await response.json();
-      console.log("Post detail fetched:", data.id);
+      console.log("[PostModal] Post detail fetched:", {
+        postId: data.id,
+        userId: data.user?.name,
+        caption: data.caption?.substring(0, 50),
+        commentsCount: data.stats.commentsCount,
+        likesCount: data.stats.likesCount,
+      });
       console.groupEnd();
 
       setPost(data);
@@ -133,6 +198,11 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
       setLikesCount(data.stats.likesCount);
       setCommentsCount(data.stats.commentsCount);
       setComments(data.recentComments || []);
+      
+      console.log("[PostModal] Post state updated:", {
+        post: !!data,
+        comments: (data.recentComments || []).length,
+      });
     } catch (err) {
       console.error("[PostModal] Fetch error:", err);
       setError(err instanceof Error ? err.message : "게시물을 불러오는데 실패했습니다.");
@@ -281,18 +351,42 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[90vw] h-[90vh] p-0 flex overflow-hidden bg-white border-[var(--instagram-border)]">
-        {/* 좌측: 이미지 영역 (50%) */}
-        <div className="w-1/2 bg-black flex items-center justify-center relative">
+      <DialogContent 
+        className="max-w-[1200px] w-[1200px] p-0 flex overflow-hidden bg-white border-[var(--instagram-border)]"
+        style={{ 
+          height: `${imageHeight}px`,
+          maxHeight: '90vh',
+          minHeight: '608px',
+        }}
+      >
+        {/* 접근성을 위한 숨겨진 제목 및 설명 */}
+        <DialogTitle className="sr-only">게시물 상세</DialogTitle>
+        <DialogDescription className="sr-only">
+          게시물 이미지와 댓글을 확인할 수 있습니다.
+        </DialogDescription>
+        {/* 좌측: 이미지 영역 (60% 너비, 이미지 비율에 맞는 높이) */}
+        {/* 이미지가 잘리지 않도록 object-contain 사용 */}
+        <div 
+          className="w-[60%] bg-black relative overflow-hidden flex-shrink-0 flex items-center justify-center"
+          style={{ height: `${imageHeight}px` }}
+        >
           <img
+            ref={imgElementRef}
             src={post.imageUrl}
             alt={post.caption || "게시물 이미지"}
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full w-auto h-auto object-contain"
+            onLoad={handleImageLoad}
+            onError={(e) => {
+              console.error("[PostModal] Image load error:", post.imageUrl);
+            }}
           />
         </div>
 
-        {/* 우측: 댓글 영역 (50%) */}
-        <div className="w-1/2 flex flex-col bg-white">
+        {/* 우측: 댓글 영역 (40% 너비, 이미지와 동일한 높이) */}
+        <div 
+          className="w-[40%] flex flex-col bg-white overflow-hidden flex-shrink-0"
+          style={{ height: `${imageHeight}px` }}
+        >
           {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--instagram-border)]">
             <div className="flex items-center gap-3">
@@ -393,7 +487,15 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
                     } ${isAnimating ? "scale-125" : ""} transition-all`}
                   />
                 </button>
-                <button className="text-[var(--text-primary)]">
+                <button
+                  onClick={() => {
+                    // 댓글 입력창으로 포커스
+                    setTimeout(() => {
+                      commentFormRef.current?.focus();
+                    }, 100);
+                  }}
+                  className="text-[var(--text-primary)] hover:opacity-70 transition-opacity"
+                >
                   <MessageCircle className="w-6 h-6" />
                 </button>
                 <button className="text-[var(--text-primary)]">
@@ -423,6 +525,7 @@ export function PostModal({ postId, open, onOpenChange }: PostModalProps) {
 
             {/* 댓글 작성 폼 */}
             <CommentForm
+              ref={commentFormRef}
               postId={postId}
               onCommentAdded={handleCommentAdded}
               placeholder="댓글 달기..."

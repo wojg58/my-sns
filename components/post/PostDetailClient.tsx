@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import Link from "next/link";
-import { CommentForm } from "@/components/comment/CommentForm";
+import { CommentForm, type CommentFormRef } from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
+import { EditPostModal } from "@/components/post/EditPostModal";
 import { useUser } from "@clerk/nextjs";
 import type { PostWithRelations, CommentWithUser } from "@/lib/types";
 
@@ -24,6 +25,9 @@ import type { PostWithRelations, CommentWithUser } from "@/lib/types";
 
 interface PostDetailClientProps {
   postId: string;
+  initialPost?: PostWithRelations;
+  isModal?: boolean;
+  focusComment?: boolean; // 댓글 입력창에 자동 포커스할지 여부
 }
 
 /**
@@ -62,7 +66,7 @@ function formatTimeAgo(dateString: string): string {
   return `${diffInYears}년 전`;
 }
 
-export function PostDetailClient({ postId }: PostDetailClientProps) {
+export function PostDetailClient({ postId, initialPost, isModal = false, focusComment = false }: PostDetailClientProps) {
   const router = useRouter();
   const { user } = useUser();
   const [post, setPost] = useState<PostWithRelations | null>(null);
@@ -77,12 +81,33 @@ export function PostDetailClient({ postId }: PostDetailClientProps) {
   const [mounted, setMounted] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
+  const commentFormRef = useRef<CommentFormRef>(null);
+  const commentSectionRef = useRef<HTMLDivElement>(null);
 
   // 게시물 데이터 로드
   useEffect(() => {
-    fetchPostDetail();
-  }, [postId]);
+    if (!initialPost) {
+      fetchPostDetail();
+    } else {
+      setPost(initialPost);
+      setIsLiked(initialPost.isLiked || false);
+      setLikesCount(initialPost.stats.likesCount);
+      setCommentsCount(initialPost.stats.commentsCount);
+      setComments(initialPost.recentComments || []);
+      setLoading(false);
+    }
+  }, [postId, initialPost]);
+
+  // focusComment가 true일 때 댓글 입력창에 자동 포커스
+  useEffect(() => {
+    if (focusComment && !loading && post && commentFormRef.current) {
+      setTimeout(() => {
+        commentFormRef.current?.focus();
+      }, 300);
+    }
+  }, [focusComment, loading, post]);
 
   // 클라이언트 마운트 확인
   useEffect(() => {
@@ -281,7 +306,7 @@ export function PostDetailClient({ postId }: PostDetailClientProps) {
             <MoreHorizontal className="w-6 h-6 text-[var(--text-primary)]" />
           </button>
 
-          {/* 삭제 메뉴 (본인 게시물만) */}
+          {/* 메뉴 (본인 게시물만) */}
           {openMenu && isOwnPost && (
             <>
               <div
@@ -291,9 +316,20 @@ export function PostDetailClient({ postId }: PostDetailClientProps) {
               <div className="absolute right-0 top-10 bg-white border border-[var(--instagram-border)] rounded-lg shadow-lg z-20 min-w-[120px]">
                 <button
                   type="button"
+                  onClick={() => {
+                    setOpenMenu(false);
+                    setIsEditModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>수정</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleDeletePost}
                   disabled={isDeleting}
-                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-t border-[var(--instagram-border)]"
                 >
                   {isDeleting ? (
                     <>
@@ -361,7 +397,18 @@ export function PostDetailClient({ postId }: PostDetailClientProps) {
               } ${isAnimating ? "scale-125" : ""} transition-all`}
             />
           </button>
-          <button className="text-[var(--text-primary)]">
+          <button
+            onClick={() => {
+              // 댓글 섹션으로 스크롤 및 포커스
+              if (commentSectionRef.current) {
+                commentSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+              setTimeout(() => {
+                commentFormRef.current?.focus();
+              }, 300);
+            }}
+            className="text-[var(--text-primary)] hover:opacity-70 transition-opacity"
+          >
             <MessageCircle className="w-6 h-6" />
           </button>
           <button className="text-[var(--text-primary)]">
@@ -407,13 +454,35 @@ export function PostDetailClient({ postId }: PostDetailClientProps) {
       </div>
 
       {/* 댓글 작성 폼 */}
-      <div className="sticky bottom-0 bg-white border-t border-[var(--instagram-border)]">
+      <div ref={commentSectionRef} className="sticky bottom-0 bg-white border-t border-[var(--instagram-border)]">
         <CommentForm
+          ref={commentFormRef}
           postId={postId}
           onCommentAdded={handleCommentAdded}
           placeholder="댓글 달기..."
         />
       </div>
+
+      {/* 게시물 수정 모달 */}
+      {post && (
+        <EditPostModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          postId={postId}
+          initialCaption={post.caption || ""}
+          onSuccess={() => {
+            // 수정 성공 후 게시물 데이터 다시 불러오기
+            console.log("[PostDetailClient] Post updated, refreshing...");
+            if (initialPost) {
+              // initialPost가 있으면 페이지 리로드
+              window.location.reload();
+            } else {
+              // 없으면 fetchPostDetail 호출
+              fetchPostDetail();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
