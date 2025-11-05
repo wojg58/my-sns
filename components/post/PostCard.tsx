@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { CommentForm } from "@/components/comment/CommentForm";
 import { CommentList } from "@/components/comment/CommentList";
+import { PostModal } from "@/components/post/PostModal";
 import type { PostWithRelations, CommentWithUser } from "@/lib/types";
 
 /**
@@ -90,6 +93,8 @@ export function PostCard({
   isLiked: initialIsLiked,
   recentComments = [],
 }: PostCardProps) {
+  const router = useRouter();
+  const { user: clerkUser } = useUser();
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(initialStats.likesCount);
   const [commentsCount, setCommentsCount] = useState(initialStats.commentsCount);
@@ -99,8 +104,13 @@ export function PostCard({
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
   const [timeAgo, setTimeAgo] = useState<string>("");
   const [mounted, setMounted] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const lastTapRef = useRef<number>(0);
   const imageRef = useRef<HTMLDivElement>(null);
+
+  const isOwnPost = clerkUser?.id === user.clerkId;
 
   // 클라이언트 마운트 확인
   useEffect(() => {
@@ -110,6 +120,49 @@ export function PostCard({
 
   // 캡션 줄 수 계산 (대략적으로)
   const shouldTruncate = caption && caption.length > 100 && !showFullCaption;
+
+  // 게시물 삭제
+  const handleDeletePost = async () => {
+    if (!confirm("정말 이 게시물을 삭제하시겠습니까?")) return;
+
+    setIsDeleting(true);
+    setOpenMenu(false);
+
+    try {
+      console.group("[PostCard] Deleting post");
+      console.log("Post ID:", id);
+
+      const response = await fetch(`/api/posts/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "게시물 삭제에 실패했습니다.");
+      }
+
+      console.log("Post deleted successfully");
+      console.groupEnd();
+
+      // 삭제 성공 시 페이지 새로고침
+      window.location.reload();
+    } catch (err) {
+      console.error("[PostCard] Delete error:", err);
+      alert(err instanceof Error ? err.message : "게시물 삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 이미지 클릭 시 모달 열기 (Desktop) 또는 페이지 이동 (Mobile)
+  const handleImageClick = () => {
+    // Desktop (1024px+)에서는 모달, Mobile에서는 페이지 이동
+    if (window.innerWidth >= 1024) {
+      setIsModalOpen(true);
+    } else {
+      router.push(`/post/${id}`);
+    }
+  };
 
   // 좋아요 토글
   const handleLikeClick = async () => {
@@ -215,9 +268,44 @@ export function PostCard({
         </div>
 
         {/* 메뉴 버튼 */}
-        <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
-          <MoreHorizontal className="w-5 h-5 text-[var(--text-primary)]" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setOpenMenu(!openMenu)}
+            className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <MoreHorizontal className="w-5 h-5 text-[var(--text-primary)]" />
+          </button>
+
+          {/* 삭제 메뉴 (본인 게시물만) */}
+          {openMenu && isOwnPost && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setOpenMenu(false)}
+              />
+              <div className="absolute right-0 top-10 bg-white border border-[var(--instagram-border)] rounded-lg shadow-lg z-20 min-w-[120px]">
+                <button
+                  type="button"
+                  onClick={handleDeletePost}
+                  disabled={isDeleting}
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>삭제 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>삭제</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       {/* 이미지 영역 (1:1 정사각형) */}
@@ -225,6 +313,7 @@ export function PostCard({
         ref={imageRef}
         className="relative w-full aspect-square bg-gray-100 cursor-pointer"
         onDoubleClick={handleImageDoubleTap}
+        onClick={handleImageClick}
       >
         <img
           src={imageUrl}
@@ -269,12 +358,18 @@ export function PostCard({
           </button>
 
           {/* 댓글 버튼 */}
-          <Link
-            href={`/post/${id}`}
+          <button
+            onClick={() => {
+              if (window.innerWidth >= 1024) {
+                setIsModalOpen(true);
+              } else {
+                router.push(`/post/${id}`);
+              }
+            }}
             className="p-2 hover:opacity-70 transition-opacity"
           >
             <MessageCircle className="w-6 h-6 text-[var(--text-primary)]" />
-          </Link>
+          </button>
 
           {/* 공유 버튼 (UI만) */}
           <button className="p-2 hover:opacity-70 transition-opacity">

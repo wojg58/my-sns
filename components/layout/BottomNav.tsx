@@ -7,6 +7,7 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { Home, Search, SquarePlus, Heart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreatePostModal } from "@/components/post/CreatePostModal";
+import { SearchModal } from "@/components/search/SearchModal";
 
 /**
  * @file components/layout/BottomNav.tsx
@@ -33,6 +34,7 @@ const navItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (
     <>
@@ -43,6 +45,7 @@ export function BottomNav() {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               const isCreateButton = item.href === "/create";
+              const isSearchButton = item.href === "/search";
 
               // "만들기" 버튼은 모달 열기
               if (isCreateButton) {
@@ -54,6 +57,31 @@ export function BottomNav() {
                       className="flex flex-col items-center justify-center h-full px-4 transition-colors"
                     >
                       <Icon className="w-6 h-6 text-[var(--text-secondary)]" />
+                    </button>
+                  </li>
+                );
+              }
+
+              // "검색" 버튼은 모달 열기
+              if (isSearchButton) {
+                return (
+                  <li key={item.href}>
+                    <button
+                      type="button"
+                      onClick={() => setIsSearchModalOpen(true)}
+                      className={cn(
+                        "flex flex-col items-center justify-center h-full px-4 transition-colors",
+                        isActive && "text-[var(--text-primary)]",
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          "w-6 h-6",
+                          isActive
+                            ? "text-[var(--text-primary)]"
+                            : "text-[var(--text-secondary)]",
+                        )}
+                      />
                     </button>
                   </li>
                 );
@@ -100,6 +128,12 @@ export function BottomNav() {
       <CreatePostModal
         open={isCreatePostModalOpen}
         onOpenChange={setIsCreatePostModalOpen}
+      />
+
+      {/* 검색 모달 */}
+      <SearchModal
+        open={isSearchModalOpen}
+        onOpenChange={setIsSearchModalOpen}
       />
     </>
   );

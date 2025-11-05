@@ -242,22 +242,22 @@
 
 ### 3-4. 게시물 상세 모달/페이지
 
-- [ ] `components/post/PostModal.tsx` 컴포넌트 (Desktop)
-  - [ ] 모달 레이아웃 (이미지 50% + 댓글 50%)
-  - [ ] 좌측: 이미지 영역
-  - [ ] 우측: 댓글 목록 (스크롤 가능)
-  - [ ] 닫기 버튼 (✕)
-  - [ ] 이전/다음 게시물 네비게이션 (‹ ›)
-- [ ] `app/(main)/post/[postId]/page.tsx` (Mobile)
-  - [ ] 전체 페이지로 전환
-  - [ ] 게시물 상세 정보 표시
-- [ ] `app/api/posts/[postId]/route.ts` GET API
-  - [ ] 게시물 상세 정보 조회
-  - [ ] 댓글 목록 포함
-- [ ] 게시물 삭제 기능
-  - [ ] PostCard 헤더의 ⋯ 메뉴에 "삭제" 옵션
-  - [ ] 본인 게시물만 삭제 가능
-  - [ ] `app/api/posts/[postId]/route.ts` DELETE API
+- [x] `components/post/PostModal.tsx` 컴포넌트 (Desktop)
+  - [x] 모달 레이아웃 (이미지 50% + 댓글 50%)
+  - [x] 좌측: 이미지 영역
+  - [x] 우측: 댓글 목록 (스크롤 가능)
+  - [x] 닫기 버튼 (✕)
+  - [ ] 이전/다음 게시물 네비게이션 (‹ ›) - 1차 제외
+- [x] `app/(main)/post/[postId]/page.tsx` (Mobile)
+  - [x] 전체 페이지로 전환
+  - [x] 게시물 상세 정보 표시
+- [x] `app/api/posts/[postId]/route.ts` GET API
+  - [x] 게시물 상세 정보 조회
+  - [x] 댓글 목록 포함
+- [x] 게시물 삭제 기능
+  - [x] PostCard 헤더의 ⋯ 메뉴에 "삭제" 옵션
+  - [x] 본인 게시물만 삭제 가능
+  - [x] `app/api/posts/[postId]/route.ts` DELETE API
 
 ## 4. 최종 마무리 & 배포
 

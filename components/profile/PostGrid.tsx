@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Heart, MessageCircle } from "lucide-react";
+import { PostModal } from "@/components/post/PostModal";
 import type { PostsResponse, PostWithRelations } from "@/lib/types";
 
 /**
@@ -110,34 +110,54 @@ export function PostGrid({ userId }: PostGridProps) {
  */
 function PostThumbnail({ post }: { post: PostWithRelations }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Desktop (1024px+)에서는 모달, Mobile에서는 페이지 이동
+    if (window.innerWidth >= 1024) {
+      setIsModalOpen(true);
+    } else {
+      window.location.href = `/post/${post.id}`;
+    }
+  };
 
   return (
-    <Link
-      href={`/post/${post.id}`}
-      className="relative aspect-square bg-gray-100 group cursor-pointer"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <img
-        src={post.imageUrl}
-        alt={post.caption || "게시물 이미지"}
-        className="w-full h-full object-cover"
-      />
+    <>
+      <div
+        className="relative aspect-square bg-gray-100 group cursor-pointer"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleClick}
+      >
+        <img
+          src={post.imageUrl}
+          alt={post.caption || "게시물 이미지"}
+          className="w-full h-full object-cover"
+        />
 
-      {/* Hover 오버레이 */}
-      {isHovered && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-6 text-white">
-          <div className="flex items-center gap-1.5">
-            <Heart className="w-5 h-5 fill-white" />
-            <span className="font-semibold">{post.stats.likesCount}</span>
+        {/* Hover 오버레이 */}
+        {isHovered && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-6 text-white">
+            <div className="flex items-center gap-1.5">
+              <Heart className="w-5 h-5 fill-white" />
+              <span className="font-semibold">{post.stats.likesCount}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="w-5 h-5 fill-white" />
+              <span className="font-semibold">{post.stats.commentsCount}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <MessageCircle className="w-5 h-5 fill-white" />
-            <span className="font-semibold">{post.stats.commentsCount}</span>
-          </div>
-        </div>
-      )}
-    </Link>
+        )}
+      </div>
+
+      {/* 게시물 상세 모달 (Desktop) */}
+      <PostModal
+        postId={post.id}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
+    </>
   );
 }
 

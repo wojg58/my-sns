@@ -7,6 +7,7 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Home, Search, SquarePlus, User, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreatePostModal } from "@/components/post/CreatePostModal";
+import { SearchModal } from "@/components/search/SearchModal";
 
 /**
  * @file components/layout/Sidebar.tsx
@@ -33,6 +34,7 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (
     <>
@@ -65,6 +67,7 @@ export function Sidebar() {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   const isCreateButton = item.href === "/create";
+                  const isSearchButton = item.href === "/search";
 
                   // "만들기" 버튼은 모달 열기
                   if (isCreateButton) {
@@ -79,7 +82,42 @@ export function Sidebar() {
                           )}
                         >
                           <Icon className="w-6 h-6 text-[var(--text-primary)]" />
-                          <span className="text-base hidden lg:inline text-[var(--text-primary)]">
+                          <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
+                            {item.label}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  }
+
+                  // "검색" 버튼은 모달 열기
+                  if (isSearchButton) {
+                    return (
+                      <li key={item.href}>
+                        <button
+                          type="button"
+                          onClick={() => setIsSearchModalOpen(true)}
+                          className={cn(
+                            "w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg transition-colors",
+                            "hover:bg-gray-50",
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "w-6 h-6",
+                              isActive
+                                ? "text-[var(--text-primary)]"
+                                : "text-[var(--text-primary)]",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-lg hidden lg:inline",
+                              isActive
+                                ? "text-[var(--text-primary)] font-semibold"
+                                : "text-[var(--text-primary)]",
+                            )}
+                          >
                             {item.label}
                           </span>
                         </button>
@@ -108,7 +146,7 @@ export function Sidebar() {
                         />
                         <span
                           className={cn(
-                            "text-base hidden lg:inline",
+                            "text-lg hidden lg:inline",
                             isActive
                               ? "text-[var(--text-primary)] font-semibold"
                               : "text-[var(--text-primary)]",
@@ -128,7 +166,7 @@ export function Sidebar() {
                 <SignInButton mode="modal">
                   <button className="w-full flex items-center gap-3 md:justify-center lg:justify-start px-3 py-2 rounded-lg hover:bg-gray-50">
                     <Menu className="w-6 h-6 text-[var(--text-primary)]" />
-                    <span className="text-base hidden lg:inline text-[var(--text-primary)]">
+                    <span className="text-lg hidden lg:inline text-[var(--text-primary)]">
                       로그인
                     </span>
                   </button>
@@ -143,6 +181,12 @@ export function Sidebar() {
       <CreatePostModal
         open={isCreatePostModalOpen}
         onOpenChange={setIsCreatePostModalOpen}
+      />
+
+      {/* 검색 모달 */}
+      <SearchModal
+        open={isSearchModalOpen}
+        onOpenChange={setIsSearchModalOpen}
       />
     </>
   );
